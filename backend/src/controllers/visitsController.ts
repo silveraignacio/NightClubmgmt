@@ -5,6 +5,7 @@ import { catchAsync, AppError } from '../utils/errorHandler';
 import { validateQRCode } from '../services/qrService';
 import { sendNotification, notificationTemplates } from '../services/notificationService';
 import { updateMemberPoints } from '../services/pointsService';
+import { auditService, AuditActionType } from '../services/auditService';
 
 export const createVisit = catchAsync(async (req: AuthRequest, res: Response) => {
   const clubId = req.clubId!;
@@ -77,6 +78,22 @@ export const createVisit = catchAsync(async (req: AuthRequest, res: Response) =>
     title: template.title,
     body: template.body,
   });
+
+  // Audit log
+  await auditService.logAction(
+    AuditActionType.VISIT_LOGGED,
+    userId,
+    clubId,
+    {
+      visitId: visit.id,
+      memberId: member.id,
+      memberName: member.full_name,
+      entryMethod,
+      entryType,
+      pointsEarned,
+    },
+    req
+  );
 
   res.status(201).json({
     status: 'success',

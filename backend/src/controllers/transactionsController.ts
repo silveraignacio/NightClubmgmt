@@ -5,6 +5,7 @@ import { catchAsync, AppError } from '../utils/errorHandler';
 import { validateQRCode } from '../services/qrService';
 import { updateMemberPoints, calculatePointsEarned } from '../services/pointsService';
 import { sendNotification, notificationTemplates } from '../services/notificationService';
+import { auditService, AuditActionType } from '../services/auditService';
 
 export const createTransaction = catchAsync(async (req: AuthRequest, res: Response) => {
   const clubId = req.clubId!;
@@ -119,6 +120,25 @@ export const createTransaction = catchAsync(async (req: AuthRequest, res: Respon
     title: template.title,
     body: template.body,
   });
+
+  // Audit log
+  await auditService.logAction(
+    AuditActionType.TRANSACTION_PROCESSED,
+    userId,
+    clubId,
+    {
+      transactionId: transaction.id,
+      memberId: member.id,
+      memberName: member.full_name,
+      transactionType,
+      amount: finalAmount,
+      originalAmount: amount,
+      discountApplied,
+      pointsEarned,
+      paymentMethod,
+    },
+    req
+  );
 
   res.status(201).json({
     status: 'success',

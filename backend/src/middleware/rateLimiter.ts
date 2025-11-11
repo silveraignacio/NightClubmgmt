@@ -1,5 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { AppError } from '../utils/errorHandler';
+import { auditService, AuditActionType } from '../services/auditService';
+import { AuthRequest } from './auth';
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
@@ -8,7 +10,20 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
+  handler: async (req, res) => {
+    const authReq = req as AuthRequest;
+    // Audit log for rate limit exceeded
+    await auditService.logAction(
+      AuditActionType.RATE_LIMIT_EXCEEDED,
+      authReq.user?.id,
+      authReq.clubId,
+      {
+        limitType: 'api',
+        path: req.originalUrl || req.url,
+        method: req.method,
+      },
+      req
+    );
     throw new AppError('Too many requests from this IP, please try again later.', 429);
   },
 });
@@ -19,7 +34,20 @@ export const authLimiter = rateLimit({
   max: 5, // 5 requests per window
   skipSuccessfulRequests: true,
   message: 'Too many authentication attempts, please try again after 15 minutes.',
-  handler: (req, res) => {
+  handler: async (req, res) => {
+    // Audit log for suspicious authentication attempts
+    await auditService.logAction(
+      AuditActionType.SUSPICIOUS_ACTIVITY,
+      undefined,
+      undefined,
+      {
+        limitType: 'auth',
+        path: req.originalUrl || req.url,
+        method: req.method,
+        reason: 'Too many authentication attempts',
+      },
+      req
+    );
     throw new AppError('Too many authentication attempts, please try again after 15 minutes.', 429);
   },
 });

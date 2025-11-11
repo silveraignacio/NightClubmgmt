@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone', // Optimized for Docker deployment
   images: {
     domains: ['localhost', 'club-nightlife-assets.s3.amazonaws.com'],
   },

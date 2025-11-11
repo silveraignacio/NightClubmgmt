@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../utils/errorHandler';
 import { query } from '../config/database';
+import { auditService, AuditActionType } from '../services/auditService';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -27,6 +28,14 @@ export const protect = async (
     }
 
     if (!token) {
+      // Audit log for unauthorized access attempt
+      await auditService.logAction(
+        AuditActionType.UNAUTHORIZED_ACCESS,
+        undefined,
+        undefined,
+        { reason: 'Missing authentication token', path: req.originalUrl || req.url },
+        req
+      );
       throw new AppError('You are not logged in. Please log in to get access.', 401);
     }
 
@@ -58,6 +67,14 @@ export const protect = async (
     }
 
     if (userQuery.rows.length === 0) {
+      // Audit log for invalid token
+      await auditService.logAction(
+        AuditActionType.INVALID_TOKEN,
+        decoded.id,
+        undefined,
+        { reason: 'User no longer exists', path: req.originalUrl || req.url },
+        req
+      );
       throw new AppError('The user belonging to this token no longer exists.', 401);
     }
 
@@ -73,9 +90,25 @@ export const protect = async (
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
+      // Audit log for invalid JWT
+      await auditService.logAction(
+        AuditActionType.INVALID_TOKEN,
+        undefined,
+        undefined,
+        { reason: 'Invalid JWT', error: error.message, path: req.originalUrl || req.url },
+        req
+      );
       return next(new AppError('Invalid token. Please log in again.', 401));
     }
     if (error.name === 'TokenExpiredError') {
+      // Audit log for expired token
+      await auditService.logAction(
+        AuditActionType.INVALID_TOKEN,
+        undefined,
+        undefined,
+        { reason: 'Expired JWT', path: req.originalUrl || req.url },
+        req
+      );
       return next(new AppError('Your token has expired. Please log in again.', 401));
     }
     next(error);
@@ -83,8 +116,21 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
+      // Audit log for unauthorized access attempt
+      await auditService.logAction(
+        AuditActionType.UNAUTHORIZED_ACCESS,
+        req.user?.id,
+        req.clubId,
+        {
+          reason: 'Insufficient permissions',
+          requiredRoles: roles,
+          userRole: req.user?.role,
+          path: req.originalUrl || req.url,
+        },
+        req
+      );
       return next(
         new AppError('You do not have permission to perform this action', 403)
       );

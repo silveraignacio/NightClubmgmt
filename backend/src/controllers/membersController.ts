@@ -4,6 +4,7 @@ import { query } from '../config/database';
 import { catchAsync, AppError } from '../utils/errorHandler';
 import { generateQRCode } from '../services/qrService';
 import { v4 as uuidv4 } from 'uuid';
+import { auditService, AuditActionType } from '../services/auditService';
 
 export const getAllMembers = catchAsync(async (req: AuthRequest, res: Response) => {
   const clubId = req.clubId;
@@ -98,12 +99,28 @@ export const createMember = catchAsync(async (req: AuthRequest, res: Response) =
     [clubId, email, phone, fullName, dateOfBirth, qrCodeId, membershipTierId]
   );
 
+  const newMember = result.rows[0];
+
   // Update club members count
   await query('UPDATE clubs SET members_count = members_count + 1 WHERE id = $1', [clubId]);
 
+  // Audit log
+  await auditService.logAction(
+    AuditActionType.MEMBER_CREATED,
+    req.user?.id,
+    clubId,
+    {
+      memberId: newMember.id,
+      memberName: fullName,
+      email,
+      qrCodeId,
+    },
+    req
+  );
+
   res.status(201).json({
     status: 'success',
-    data: { member: result.rows[0] },
+    data: { member: newMember },
   });
 });
 
@@ -144,9 +161,24 @@ export const updateMember = catchAsync(async (req: AuthRequest, res: Response) =
     throw new AppError('Member not found', 404);
   }
 
+  const updatedMember = result.rows[0];
+
+  // Audit log
+  await auditService.logAction(
+    AuditActionType.MEMBER_UPDATED,
+    req.user?.id,
+    clubId,
+    {
+      memberId,
+      memberName: updatedMember.full_name,
+      updatedFields: Object.keys(updates),
+    },
+    req
+  );
+
   res.status(200).json({
     status: 'success',
-    data: { member: result.rows[0] },
+    data: { member: updatedMember },
   });
 });
 
@@ -154,17 +186,36 @@ export const deleteMember = catchAsync(async (req: AuthRequest, res: Response) =
   const { memberId } = req.params;
   const clubId = req.clubId;
 
+  // Get member info before deletion
+  const memberInfo = await query(
+    'SELECT full_name, email FROM club_members WHERE id = $1 AND club_id = $2',
+    [memberId, clubId]
+  );
+
+  if (memberInfo.rows.length === 0) {
+    throw new AppError('Member not found', 404);
+  }
+
   const result = await query(
     'DELETE FROM club_members WHERE id = $1 AND club_id = $2 RETURNING id',
     [memberId, clubId]
   );
 
-  if (result.rows.length === 0) {
-    throw new AppError('Member not found', 404);
-  }
-
   // Update club members count
   await query('UPDATE clubs SET members_count = members_count - 1 WHERE id = $1', [clubId]);
+
+  // Audit log
+  await auditService.logAction(
+    AuditActionType.MEMBER_DELETED,
+    req.user?.id,
+    clubId,
+    {
+      memberId,
+      memberName: memberInfo.rows[0].full_name,
+      email: memberInfo.rows[0].email,
+    },
+    req
+  );
 
   res.status(204).send();
 });
