@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
             <h1 className="text-4xl md:text-5xl font-bold text-white">Terms of Service</h1>
           </div>
           <p className="text-gray-400 text-lg">
-            These Terms of Service govern your use of Club Nightlife's platform and services. Please read them carefully.
+            These Terms of Service govern your use of Club Nightlife&apos;s platform and services. Please read them carefully.
           </p>
           <p className="text-sm text-gray-500 mt-4">
             Last Updated: November 11, 2025
@@ -49,10 +49,10 @@ export default function TermsOfServicePage() {
                 <h2 className="text-2xl font-bold text-white mb-3">1. Acceptance of Terms</h2>
                 <div className="space-y-4 text-gray-300">
                   <p>
-                    By accessing or using Club Nightlife's services, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our services.
+                    By accessing or using Club Nightlife&apos;s services, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our services.
                   </p>
                   <p>
-                    These Terms constitute a legally binding agreement between you (either an individual or a legal entity) and Club Nightlife Inc. ("Company," "we," "us," or "our").
+                    These Terms constitute a legally binding agreement between you (either an individual or a legal entity) and Club Nightlife Inc. (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
                   </p>
                 </div>
               </div>
@@ -114,7 +114,7 @@ export default function TermsOfServicePage() {
                     <li>Create an account using false or misleading information</li>
                     <li>Share your account credentials with others</li>
                     <li>Create multiple accounts for the same venue</li>
-                    <li>Use another user's account without permission</li>
+                    <li>Use another user&apos;s account without permission</li>
                   </ul>
                   <p className="mt-4">
                     We reserve the right to suspend or terminate accounts that violate these terms.
@@ -205,13 +205,13 @@ export default function TermsOfServicePage() {
                     <strong>Our Content:</strong> All content, features, and functionality of the service, including but not limited to text, graphics, logos, icons, images, software, and compilation thereof, are the exclusive property of Club Nightlife and are protected by copyright, trademark, and other intellectual property laws.
                   </p>
                   <p>
-                    <strong>Your Content:</strong> You retain all rights to the data and content you upload to our service ("Your Content"). By uploading Your Content, you grant us a worldwide, non-exclusive, royalty-free license to use, store, and process Your Content solely for the purpose of providing our services to you.
+                    <strong>Your Content:</strong> You retain all rights to the data and content you upload to our service (&quot;Your Content&quot;). By uploading Your Content, you grant us a worldwide, non-exclusive, royalty-free license to use, store, and process Your Content solely for the purpose of providing our services to you.
                   </p>
                   <p>
                     <strong>License to Use:</strong> We grant you a limited, non-exclusive, non-transferable license to access and use our service for your internal business purposes, subject to these Terms.
                   </p>
                   <p>
-                    <strong>Trademarks:</strong> "Club Nightlife" and our logo are trademarks of Club Nightlife Inc. You may not use these trademarks without our prior written permission.
+                    <strong>Trademarks:</strong> &quot;Club Nightlife&quot; and our logo are trademarks of Club Nightlife Inc. You may not use these trademarks without our prior written permission.
                   </p>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function TermsOfServicePage() {
                 <h2 className="text-2xl font-bold text-white mb-3">7. Disclaimers and Limitations of Liability</h2>
                 <div className="space-y-4 text-gray-300">
                   <p>
-                    <strong>Service "As Is":</strong> Our service is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
+                    <strong>Service &quot;As Is&quot;:</strong> Our service is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
                   </p>
                   <p>
                     <strong>No Guarantee:</strong> We do not guarantee that:
@@ -330,7 +330,7 @@ export default function TermsOfServicePage() {
                     <strong>Governing Law:</strong> These Terms shall be governed by and construed in accordance with the laws of the State of California, United States, without regard to its conflict of law provisions.
                   </p>
                   <p>
-                    <strong>Arbitration:</strong> Any dispute arising from or relating to these Terms or the service shall be resolved through binding arbitration in accordance with the American Arbitration Association's Commercial Arbitration Rules. The arbitration shall take place in San Francisco, California.
+                    <strong>Arbitration:</strong> Any dispute arising from or relating to these Terms or the service shall be resolved through binding arbitration in accordance with the American Arbitration Association&apos;s Commercial Arbitration Rules. The arbitration shall take place in San Francisco, California.
                   </p>
                   <p>
                     <strong>Class Action Waiver:</strong> You agree that any arbitration or proceeding shall be limited to the dispute between us and you individually. You waive your right to participate in a class action lawsuit or class-wide arbitration.
@@ -404,7 +404,7 @@ export default function TermsOfServicePage() {
         {/* Acknowledgment */}
         <div className="mt-12 glass rounded-2xl p-6 text-center">
           <p className="text-gray-300">
-            By using Club Nightlife's services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+            By using Club Nightlife&apos;s services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
           </p>
         </div>
 

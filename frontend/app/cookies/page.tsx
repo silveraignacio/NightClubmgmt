@@ -250,7 +250,7 @@ export default function CookiePolicyPage() {
                     <div>
                       <h3 className="font-semibold text-white mb-2">Cookie Preference Center</h3>
                       <p>
-                        When you first visit our website, you'll see a cookie banner where you can manage your preferences. You can also update your preferences at any time through our Cookie Preference Center.
+                        When you first visit our website, you&apos;ll see a cookie banner where you can manage your preferences. You can also update your preferences at any time through our Cookie Preference Center.
                       </p>
                       <button className="mt-3 px-4 py-2 bg-primary-500/20 border border-primary-500/50 rounded-lg text-primary-300 hover:bg-primary-500/30 transition text-sm">
                         Manage Cookie Preferences
@@ -270,7 +270,7 @@ export default function CookiePolicyPage() {
                     <div>
                       <h3 className="font-semibold text-white mb-2">Do Not Track</h3>
                       <p>
-                        Some browsers include a "Do Not Track" (DNT) feature. Currently, there is no industry standard for how to respond to DNT signals. Our website does not currently respond to DNT signals.
+                        Some browsers include a &quot;Do Not Track&quot; (DNT) feature. Currently, there is no industry standard for how to respond to DNT signals. Our website does not currently respond to DNT signals.
                       </p>
                     </div>
                   </div>
@@ -289,7 +289,7 @@ export default function CookiePolicyPage() {
                 <h2 className="text-2xl font-bold text-white mb-3">5. Cookie Lifespan</h2>
                 <div className="space-y-4 text-gray-300">
                   <p>
-                    Cookies can be either "session" cookies or "persistent" cookies:
+                    Cookies can be either &quot;session&quot; cookies or &quot;persistent&quot; cookies:
                   </p>
                   <div className="space-y-3">
                     <div className="bg-dark-900/50 rounded-lg p-4">
@@ -355,7 +355,7 @@ export default function CookiePolicyPage() {
                     We will notify you of any material changes by:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>Updating the "Last Updated" date at the top of this policy</li>
+                    <li>Updating the &quot;Last Updated&quot; date at the top of this policy</li>
                     <li>Displaying a prominent notice on our website</li>
                     <li>Sending you an email notification (if you have an account)</li>
                   </ul>
