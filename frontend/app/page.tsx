@@ -40,6 +40,7 @@ interface FAQ {
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showDemoModal, setShowDemoModal] = useState(false)
 
   const pricingTiers: PricingTier[] = [
     {
@@ -148,12 +149,12 @@ export default function LandingPage() {
               <Link href="#faq" className="text-gray-300 hover:text-white transition">
                 FAQ
               </Link>
-              <button className="px-4 py-2 text-gray-300 hover:text-white transition">
+              <Link href="/login" className="px-4 py-2 text-gray-300 hover:text-white transition">
                 Sign In
-              </button>
-              <button className="px-6 py-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold hover:shadow-lg hover:shadow-primary-500/50 transition">
+              </Link>
+              <Link href="/register-club" className="px-6 py-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold hover:shadow-lg hover:shadow-primary-500/50 transition">
                 Start Free Trial
-              </button>
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -179,12 +180,12 @@ export default function LandingPage() {
               <Link href="#faq" className="block px-3 py-2 text-gray-300 hover:text-white">
                 FAQ
               </Link>
-              <button className="w-full text-left px-3 py-2 text-gray-300 hover:text-white">
+              <Link href="/login" className="block px-3 py-2 text-gray-300 hover:text-white">
                 Sign In
-              </button>
-              <button className="w-full px-6 py-2 mt-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold">
+              </Link>
+              <Link href="/register-club" className="block px-6 py-2 mt-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold text-center">
                 Start Free Trial
-              </button>
+              </Link>
             </div>
           </div>
         )}
@@ -214,11 +215,11 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-primary-500/50 transition flex items-center gap-2 glow">
+              <Link href="/register-club" className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-primary-500/50 transition flex items-center gap-2 glow">
                 Start Free Trial
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition" />
-              </button>
-              <button className="px-8 py-4 glass rounded-lg font-semibold text-lg hover:bg-white/10 transition">
+              </Link>
+              <button onClick={() => setShowDemoModal(true)} className="px-8 py-4 glass rounded-lg font-semibold text-lg hover:bg-white/10 transition">
                 Watch Demo
               </button>
             </div>
@@ -469,15 +470,16 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <button
-                  className={`w-full py-3 rounded-lg font-semibold mb-6 transition ${
+                <Link
+                  href="/register-club"
+                  className={`w-full py-3 rounded-lg font-semibold mb-6 transition block text-center ${
                     tier.popular
                       ? 'bg-gradient-to-r from-primary-500 to-purple-500 hover:shadow-lg hover:shadow-primary-500/50'
                       : 'bg-white/10 hover:bg-white/20'
                   }`}
                 >
                   {tier.cta}
-                </button>
+                </Link>
 
                 <div className="space-y-3">
                   {tier.features.map((feature) => (
@@ -568,11 +570,11 @@ export default function LandingPage() {
             and increase revenue. Start your free trial today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-primary-500/50 transition flex items-center gap-2 glow">
+            <Link href="/register-club" className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-primary-500/50 transition flex items-center gap-2 glow">
               Start Free Trial
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition" />
-            </button>
-            <button className="px-8 py-4 glass rounded-lg font-semibold text-lg hover:bg-white/10 transition">
+            </Link>
+            <button onClick={() => setShowDemoModal(true)} className="px-8 py-4 glass rounded-lg font-semibold text-lg hover:bg-white/10 transition">
               Schedule Demo
             </button>
           </div>
@@ -647,13 +649,46 @@ export default function LandingPage() {
               © 2025 Club Nightlife. All rights reserved.
             </p>
             <div className="flex items-center gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-gray-400 hover:text-white transition text-sm">Privacy Policy</a>
-              <a href="#" className="text-gray-400 hover:text-white transition text-sm">Terms of Service</a>
-              <a href="#" className="text-gray-400 hover:text-white transition text-sm">Cookie Policy</a>
+              <Link href="/privacy" className="text-gray-400 hover:text-white transition text-sm">Privacy Policy</Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white transition text-sm">Terms of Service</Link>
+              <Link href="/cookies" className="text-gray-400 hover:text-white transition text-sm">Cookie Policy</Link>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Demo Modal */}
+      {showDemoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDemoModal(false)}>
+          <div className="relative w-full max-w-4xl aspect-video bg-dark-800 rounded-2xl overflow-hidden border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowDemoModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-dark-900/80 rounded-lg hover:bg-dark-900 transition text-white"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            {/* YouTube Video Embed - Replace with actual video ID */}
+            <iframe
+              className="w-full h-full"
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+              title="Club Nightlife Demo"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+            {/* Placeholder if no video */}
+            {/* <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center mx-auto">
+                  <Play className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Demo Video Coming Soon</h3>
+                <p className="text-gray-400">Check out our features in the meantime</p>
+              </div>
+            </div> */}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

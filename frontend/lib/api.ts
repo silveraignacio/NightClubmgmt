@@ -28,12 +28,10 @@ export interface ApiErrorResponse {
 
 // Get base URL from environment
 const getBaseUrl = (): string => {
-  if (typeof window === 'undefined') {
-    // Server-side
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  }
-  // Client-side
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  // Use environment variable or fallback to localhost backend
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  // Add /api suffix if not already present
+  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 };
 
 // Create axios instance
