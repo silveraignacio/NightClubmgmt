@@ -293,7 +293,7 @@ export default function NewMemberPage() {
                 </Button>
                 <Button
                   type="submit"
-                  loading={loading}
+                  isLoading={loading}
                   leftIcon={<User className="h-5 w-5" />}
                   className="flex-1"
                 >
