@@ -303,9 +303,9 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         user: state.user,
       }), // Only persist token and user
-      onRehydrate: (state) => {
+      onRehydrateStorage: () => (state) => {
         // Set authorization header after hydration
-        if (state.token) {
+        if (state?.token) {
           authAPI.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${state.token}`;

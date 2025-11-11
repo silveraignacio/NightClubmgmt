@@ -110,7 +110,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">
-          Welcome back, {user?.fullName}! Here's what's happening today.
+          Welcome back, {user?.fullName}! Here&apos;s what&apos;s happening today.
         </p>
       </div>
 
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
         {/* Activity Feed */}
         <Card>
           <CardHeader>
-            <CardTitle>Today's Activity</CardTitle>
+            <CardTitle>Today&apos;s Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

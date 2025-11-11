@@ -27,7 +27,7 @@ const spinnerVariants = cva('animate-spin', {
 });
 
 interface SpinnerProps
-  extends React.SVGAttributes<SVGSVGElement>,
+  extends Omit<React.SVGAttributes<SVGSVGElement>, 'color'>,
     VariantProps<typeof spinnerVariants> {}
 
 /**

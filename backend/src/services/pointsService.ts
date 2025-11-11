@@ -80,7 +80,7 @@ export const calculatePointsEarned = (amount: number, multiplier: number = 1): n
 export const checkBadgeAchievements = async (
   memberId: string,
   clubId: string,
-  context: { pointsEarned?: number; visitCount?: number }
+  _context: { pointsEarned?: number; visitCount?: number }
 ) => {
   // Get member's current stats
   const memberResult = await query(

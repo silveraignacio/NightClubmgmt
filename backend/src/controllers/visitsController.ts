@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { query } from '../config/database';
-import { catchAsync, AppError } from '../utils/errorHandler';
+import { catchAsync } from '../utils/errorHandler';
 import { validateQRCode } from '../services/qrService';
 import { sendNotification, notificationTemplates } from '../services/notificationService';
 import { updateMemberPoints } from '../services/pointsService';

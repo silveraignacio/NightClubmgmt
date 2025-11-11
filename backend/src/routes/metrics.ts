@@ -2,7 +2,6 @@ import { Router, Response } from 'express';
 import { protect, restrictTo, AuthRequest } from '../middleware/auth';
 import { metricsService } from '../services/metricsService';
 import { AppError } from '../utils/errorHandler';
-import logger from '../utils/logger';
 
 const router = Router();
 

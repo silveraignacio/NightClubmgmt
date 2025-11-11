@@ -9,7 +9,7 @@ import { query } from '../config/database';
  */
 export const ensureClubAccess = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -56,7 +56,7 @@ export const ensureClubAccess = async (
  */
 export const attachClubId = (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   const clubIdFromParams = req.params.clubId;
@@ -73,7 +73,7 @@ export const attachClubId = (
  * Used for nested resources like members, events, etc.
  */
 export const verifyResourceOwnership = (tableName: string, idParam: string) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthRequest, _res: Response, next: NextFunction) => {
     try {
       const resourceId = req.params[idParam];
       const userClubId = req.clubId;

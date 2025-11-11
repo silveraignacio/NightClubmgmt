@@ -420,7 +420,7 @@ export default function LandingPage() {
             <div className="glass rounded-xl p-6">
               <Star className="h-8 w-8 text-yellow-400 mb-3" />
               <h4 className="text-lg font-semibold text-white mb-2">24/7 Support</h4>
-              <p className="text-sm text-gray-400">We're here when you need us</p>
+              <p className="text-sm text-gray-400">We&apos;re here when you need us</p>
             </div>
           </div>
         </div>

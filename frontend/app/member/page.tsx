@@ -374,7 +374,7 @@ export default function MemberDashboard() {
           <CardHeader>
             <CardTitle className="text-white">Points Earned</CardTitle>
             <CardDescription className="text-gray-400">
-              This month's points progress
+              This month&apos;s points progress
             </CardDescription>
           </CardHeader>
           <CardContent>

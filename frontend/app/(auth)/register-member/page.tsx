@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -51,7 +51,7 @@ type RegisterMemberFormData = z.infer<typeof registerMemberSchema>;
  * - Loading state
  * - Redirect to member dashboard on success
  */
-export default function RegisterMemberPage() {
+function RegisterMemberForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
@@ -399,5 +399,13 @@ export default function RegisterMemberPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterMemberPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <RegisterMemberForm />
+    </Suspense>
   );
 }

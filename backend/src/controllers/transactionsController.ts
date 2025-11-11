@@ -16,7 +16,6 @@ export const createTransaction = catchAsync(async (req: AuthRequest, res: Respon
     description,
     amount,
     paymentMethod,
-    menuItemId,
     deviceId,
   } = req.body;
 

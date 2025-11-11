@@ -116,7 +116,6 @@ const QRDisplay = React.forwardRef<HTMLDivElement, QRDisplayProps>(
             includeMargin={includeMargin}
             bgColor={bgColor}
             fgColor={fgColor}
-            quietZone={10}
           />
         </div>
 

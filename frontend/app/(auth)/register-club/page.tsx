@@ -271,10 +271,10 @@ export default function RegisterClubPage() {
           <div className="mt-3 space-y-1">
             <div className="text-xs text-gray-400 font-medium mb-2">Password requirements:</div>
             <div className="space-y-1">
-              <RequirementCheck met={password && password.length >= 8} text="At least 8 characters" />
-              <RequirementCheck met={password && /[A-Z]/.test(password)} text="One uppercase letter" />
-              <RequirementCheck met={password && /[0-9]/.test(password)} text="One number" />
-              <RequirementCheck met={password && /[^A-Za-z0-9]/.test(password)} text="One special character" />
+              <RequirementCheck met={!!(password && password.length >= 8)} text="At least 8 characters" />
+              <RequirementCheck met={!!(password && /[A-Z]/.test(password))} text="One uppercase letter" />
+              <RequirementCheck met={!!(password && /[0-9]/.test(password))} text="One number" />
+              <RequirementCheck met={!!(password && /[^A-Za-z0-9]/.test(password))} text="One special character" />
             </div>
           </div>
         </div>

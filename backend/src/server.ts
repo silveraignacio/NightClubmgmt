@@ -53,7 +53,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api', apiLimiter);
 
 // Health check endpoint
-app.get('/health', async (req: Request, res: Response) => {
+app.get('/health', async (_req: Request, res: Response) => {
   try {
     // Check database connection
     await pool.query('SELECT 1');
@@ -90,7 +90,7 @@ app.use('/api', transactionsRoutes);
 app.use('/api', metricsRoutes);
 
 // Test route
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
     message: 'Club Nightlife API v1.0',
@@ -99,7 +99,7 @@ app.get('/api', (req: Request, res: Response) => {
 });
 
 // Handle undefined routes
-app.all('*', (req: Request, res: Response) => {
+app.all('*', (req: Request, _res: Response) => {
   throw new AppError(`Can't find ${req.originalUrl} on this server!`, 404);
 });
 

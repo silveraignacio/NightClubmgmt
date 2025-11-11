@@ -16,7 +16,7 @@ export interface AuthRequest extends Request {
 
 export const protect = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -116,7 +116,7 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthRequest, _res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       // Audit log for unauthorized access attempt
       await auditService.logAction(
@@ -141,7 +141,7 @@ export const restrictTo = (...roles: string[]) => {
 
 export const optionalAuth = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {

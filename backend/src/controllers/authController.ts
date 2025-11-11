@@ -34,7 +34,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const logout = catchAsync(async (req: Request, res: Response) => {
+export const logout = catchAsync(async (_req: Request, res: Response) => {
   // Client-side will remove token
   res.status(200).json({
     status: 'success',

@@ -5,7 +5,7 @@ import { AppError } from '../utils/errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
 
 export interface RegisterData {
   email: string;
@@ -22,9 +22,11 @@ export interface LoginData {
 }
 
 export const signToken = (id: string, email: string, role: string, clubId?: string): string => {
-  return jwt.sign({ id, email, role, clubId }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+  return jwt.sign(
+    { id, email, role, clubId },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+  );
 };
 
 export const hashPassword = async (password: string): Promise<string> => {

@@ -196,7 +196,7 @@ export const deleteMember = catchAsync(async (req: AuthRequest, res: Response) =
     throw new AppError('Member not found', 404);
   }
 
-  const result = await query(
+  await query(
     'DELETE FROM club_members WHERE id = $1 AND club_id = $2 RETURNING id',
     [memberId, clubId]
   );

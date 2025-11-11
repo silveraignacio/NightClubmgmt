@@ -10,7 +10,7 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  handler: async (req, res) => {
+  handler: async (req, _res) => {
     const authReq = req as AuthRequest;
     // Audit log for rate limit exceeded
     await auditService.logAction(
@@ -34,7 +34,7 @@ export const authLimiter = rateLimit({
   max: 5, // 5 requests per window
   skipSuccessfulRequests: true,
   message: 'Too many authentication attempts, please try again after 15 minutes.',
-  handler: async (req, res) => {
+  handler: async (req, _res) => {
     // Audit log for suspicious authentication attempts
     await auditService.logAction(
       AuditActionType.SUSPICIOUS_ACTIVITY,
@@ -57,7 +57,7 @@ export const scanLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // 60 scans per minute
   message: 'Too many scan requests, please slow down.',
-  handler: (req, res) => {
+  handler: (_req, _res) => {
     throw new AppError('Too many scan requests, please slow down.', 429);
   },
 });
@@ -67,7 +67,7 @@ export const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 requests per hour
   message: 'Too many password reset attempts, please try again later.',
-  handler: (req, res) => {
+  handler: (_req, _res) => {
     throw new AppError('Too many password reset attempts, please try again later.', 429);
   },
 });

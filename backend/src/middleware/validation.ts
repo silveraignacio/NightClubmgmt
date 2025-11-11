@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
-import { AppError } from '../utils/errorHandler';
 
 export const validate = (schema: ZodSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -20,7 +19,7 @@ export const validate = (schema: ZodSchema) => {
           errors: errorMessages,
         });
       }
-      next(error);
+      return next(error);
     }
   };
 };
@@ -43,7 +42,7 @@ export const validateQuery = (schema: ZodSchema) => {
           errors: errorMessages,
         });
       }
-      next(error);
+      return next(error);
     }
   };
 };
@@ -66,7 +65,7 @@ export const validateParams = (schema: ZodSchema) => {
           errors: errorMessages,
         });
       }
-      next(error);
+      return next(error);
     }
   };
 };
