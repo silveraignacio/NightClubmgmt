@@ -357,7 +357,7 @@ export default function RegisterClubPage() {
       </div>
 
       {/* Sign In Link */}
-      <Link href="/auth/login">
+      <Link href="/login">
         <Button
           variant="outline"
           fullWidth

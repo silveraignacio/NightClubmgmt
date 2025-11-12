@@ -89,7 +89,7 @@ export const login = async (
 ): Promise<LoginResponse> => {
   try {
     const response = await apiClient.post<ApiResponse<LoginResponse>>(
-      '/auth/login',
+      '/login',
       credentials
     );
 

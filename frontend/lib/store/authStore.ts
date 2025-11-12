@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Make login request
-          const response = await authAPI.post<AuthResponse>("/auth/login", {
+          const response = await authAPI.post<AuthResponse>("/login", {
             email,
             password,
           });

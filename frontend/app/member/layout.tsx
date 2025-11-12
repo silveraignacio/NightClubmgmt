@@ -26,7 +26,7 @@ export default function MemberLayout({
     setMounted(true);
 
     if (!isLoading && !isAuthenticated) {
-      router.push('/auth/login');
+      router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
