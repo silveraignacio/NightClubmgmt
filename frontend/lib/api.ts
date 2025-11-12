@@ -98,7 +98,7 @@ export const handleApiError = (error: unknown): ApiErrorResponse => {
     const data = error.response?.data as ApiErrorResponse;
 
     return {
-      success: false,
+      status: 'error',
       error: data?.error || 'An error occurred',
       message: data?.message || error.message,
       statusCode: status,
@@ -107,7 +107,7 @@ export const handleApiError = (error: unknown): ApiErrorResponse => {
   }
 
   return {
-    success: false,
+    status: 'error',
     error: 'Unknown error',
     message: error instanceof Error ? error.message : 'An unexpected error occurred',
     statusCode: 500,
