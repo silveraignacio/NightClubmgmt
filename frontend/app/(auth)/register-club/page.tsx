@@ -122,22 +122,26 @@ export default function RegisterClubPage() {
       setGeneralError(null);
       clearError();
 
-      // Simulate API call for club registration
-      // In production, this would call a registerClub endpoint
-      const registerResponse = {
-        token: 'mock-token-' + Date.now(),
-        user: {
-          id: 'club-' + Math.random().toString(36).substr(2, 9),
-          email: data.email,
-          fullName: data.fullName,
-          role: 'club_owner',
-          clubId: 'club-' + Math.random().toString(36).substr(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+      // Make actual API call for club registration
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/club`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      };
+        body: JSON.stringify({
+          fullName: data.fullName,
+          email: data.email,
+          clubName: data.clubName,
+          password: data.password,
+        }),
+      });
 
-      // Attempt login with registered credentials
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      // Registration successful, now login
       await login(data.email, data.password);
 
       // Redirect to admin dashboard

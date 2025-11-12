@@ -18,7 +18,7 @@ import {
 
 // API base URL - adjust based on your environment
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 // Storage keys
 const TOKEN_STORAGE_KEY = "auth_token";
@@ -26,7 +26,7 @@ const USER_STORAGE_KEY = "auth_user";
 
 // Axios instance for auth requests
 const authAPI = axios.create({
-  baseURL: `${API_BASE_URL}`,
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -101,12 +101,12 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Make login request
-          const response = await authAPI.post<AuthResponse>("/login", {
+          const response = await authAPI.post<any>("/auth/login", {
             email,
             password,
           });
 
-          const { user, token } = response.data;
+          const { user, token } = response.data.data;
 
           // Update state
           set({
@@ -164,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Make registration request
-          const response = await authAPI.post<AuthResponse>(
+          const response = await authAPI.post<any>(
             "/auth/register",
             {
               email: data.email,
@@ -174,7 +174,7 @@ export const useAuthStore = create<AuthState>()(
             }
           );
 
-          const { user, token } = response.data;
+          const { user, token } = response.data.data;
 
           // Update state
           set({

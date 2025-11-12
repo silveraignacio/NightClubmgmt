@@ -29,7 +29,7 @@ export interface ApiErrorResponse {
 // Get base URL from environment
 const getBaseUrl = (): string => {
   // Use environment variable or fallback to localhost backend
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
   // Add /api suffix if not already present
   return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 };
