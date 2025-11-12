@@ -1,10 +1,10 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 
 // Types for API responses
+// Backend returns: {status: "success"|"fail"|"error", data: {...}}
 export interface ApiResponse<T = any> {
-  success: boolean;
+  status: 'success' | 'fail' | 'error';
   data?: T;
-  error?: string;
   message?: string;
   statusCode?: number;
 }
@@ -19,8 +19,8 @@ export interface PaginatedResponse<T> {
 
 // API Error interface
 export interface ApiErrorResponse {
-  success: boolean;
-  error: string;
+  status: 'fail' | 'error';
+  error?: string;
   message: string;
   statusCode: number;
   details?: Record<string, any>;
