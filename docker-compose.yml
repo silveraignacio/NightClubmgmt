@@ -52,46 +52,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      # Server
-      NODE_ENV: ${NODE_ENV}
       PORT: ${BACKEND_PORT}
-
-      # Database (uses service names: postgres, redis)
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-
-      # JWT
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-
-      # Stripe
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      STRIPE_BASIC_PRICE_ID: ${STRIPE_BASIC_PRICE_ID}
-      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
-      STRIPE_PREMIUM_PRICE_ID: ${STRIPE_PREMIUM_PRICE_ID}
-
-      # Email
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
-      FROM_EMAIL: ${FROM_EMAIL}
-
-      # Firebase
-      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
-      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
-      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
-
-      # SMS
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
-
-      # Security
-      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
-      TRIAL_DAYS: ${TRIAL_DAYS}
     ports:
       - "${BACKEND_PORT}:5000"
     healthcheck:
@@ -114,11 +78,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      # Frontend calls backend from browser (outside Docker), so uses localhost
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+    env_file:
+      - .env
     ports:
       - "${FRONTEND_PORT}:3000"
     healthcheck:
