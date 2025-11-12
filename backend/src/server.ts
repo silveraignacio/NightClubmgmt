@@ -56,7 +56,10 @@ app.use('/api', apiLimiter);
 app.get('/health', async (_req: Request, res: Response) => {
   try {
     // Check database connection
+    console.log('🔍 Health check: Testing database connection...');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'NOT SET');
     await pool.query('SELECT 1');
+    console.log('✅ Health check: Database connected successfully');
 
     res.status(200).json({
       status: 'success',
@@ -70,6 +73,7 @@ app.get('/health', async (_req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    console.error('❌ Health check failed - Database error:', error);
     logger.error('Health check failed', { error });
     res.status(503).json({
       status: 'error',
