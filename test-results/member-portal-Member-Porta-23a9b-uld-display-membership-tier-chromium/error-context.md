@@ -1,0 +1,56 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e7]: CN
+      - heading "Club Nightlife" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Modern Nightclub Management Platform
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - heading "Sign In" [level=2] [ref=e13]
+        - paragraph [ref=e14]: Enter your credentials to access your account
+      - paragraph [ref=e16]: Network error. Please check your connection
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: Email Address
+          - generic [ref=e21]:
+            - generic:
+              - img
+            - textbox "Email Address" [ref=e22]:
+              - /placeholder: you@example.com
+              - text: member@testclub.com
+        - generic [ref=e24]:
+          - generic [ref=e25]: Password
+          - generic [ref=e26]:
+            - generic:
+              - img
+            - textbox "Password" [ref=e27]:
+              - /placeholder: ••••••••
+              - text: MemberPassword123!
+            - generic:
+              - button "Show password":
+                - img
+        - generic [ref=e28]:
+          - generic [ref=e29] [cursor=pointer]:
+            - checkbox "Remember me" [ref=e30]
+            - generic [ref=e31]: Remember me
+          - link "Forgot password?" [ref=e32] [cursor=pointer]:
+            - /url: /auth/forgot-password
+        - button "Sign In" [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: Sign In
+      - generic [ref=e39]: Don't have an account?
+      - generic [ref=e40]:
+        - link "Register Club" [ref=e41] [cursor=pointer]:
+          - /url: /auth/register-club
+          - button "Register Club" [ref=e42]:
+            - generic [ref=e43]: Register Club
+        - link "Join as Member" [ref=e44] [cursor=pointer]:
+          - /url: /auth/register-member
+          - button "Join as Member" [ref=e45]:
+            - generic [ref=e46]: Join as Member
+      - paragraph [ref=e48]: "Demo: Use any credentials for testing. Contact support for production access."
+    - paragraph [ref=e50]: © 2024 Club Nightlife. All rights reserved.
+  - alert [ref=e51]
+```

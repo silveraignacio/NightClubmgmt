@@ -41,3 +41,16 @@ export const logout = catchAsync(async (_req: Request, res: Response) => {
     message: 'Logged out successfully',
   });
 });
+
+export const verifyToken = catchAsync(async (req: Request, res: Response) => {
+  // User is already authenticated via middleware
+  const user = (req as any).user;
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      valid: true,
+      user: user,
+    },
+  });
+});

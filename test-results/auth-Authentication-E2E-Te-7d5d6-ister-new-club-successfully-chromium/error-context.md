@@ -1,0 +1,83 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e7]: CN
+      - heading "Club Nightlife" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Modern Nightclub Management Platform
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - heading "Register Your Club" [level=2] [ref=e13]
+        - paragraph [ref=e14]: Create an account to manage your nightclub
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: Full Name
+          - generic [ref=e18]:
+            - generic:
+              - img
+            - textbox "Full Name" [ref=e19]:
+              - /placeholder: John Doe
+        - generic [ref=e20]:
+          - generic [ref=e21]: Email Address
+          - generic [ref=e22]:
+            - generic:
+              - img
+            - textbox "Email Address" [ref=e23]:
+              - /placeholder: you@example.com
+        - generic [ref=e24]:
+          - generic [ref=e25]: Club Name
+          - generic [ref=e26]:
+            - generic:
+              - img
+            - textbox "Club Name" [ref=e27]:
+              - /placeholder: The Midnight Lounge
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]: Password
+            - generic [ref=e31]:
+              - generic:
+                - img
+              - textbox "Password" [ref=e32]:
+                - /placeholder: ••••••••
+              - generic:
+                - button "Show password":
+                  - img
+          - generic [ref=e33]:
+            - generic [ref=e34]: "Password requirements:"
+            - generic [ref=e35]:
+              - generic [ref=e37]: At least 8 characters
+              - generic [ref=e39]: One uppercase letter
+              - generic [ref=e41]: One number
+              - generic [ref=e43]: One special character
+        - generic [ref=e44]:
+          - generic [ref=e45]: Confirm Password
+          - generic [ref=e46]:
+            - generic:
+              - img
+            - textbox "Confirm Password" [ref=e47]:
+              - /placeholder: ••••••••
+            - generic:
+              - button "Show password":
+                - img
+        - generic [ref=e48] [cursor=pointer]:
+          - checkbox "I agree to the Terms & Conditions and Privacy Policy" [ref=e49]
+          - generic [ref=e50]:
+            - text: I agree to the
+            - link "Terms & Conditions" [ref=e51]:
+              - /url: /terms
+            - text: and
+            - link "Privacy Policy" [ref=e52]:
+              - /url: /privacy
+        - button "Create Club Account" [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: Create Club Account
+      - generic [ref=e59]: Already have an account?
+      - link "Sign In" [ref=e60] [cursor=pointer]:
+        - /url: /login
+        - button "Sign In" [ref=e61]:
+          - generic [ref=e62]: Sign In
+      - paragraph [ref=e64]: By registering, you agree to our service terms. Club verification may take 24-48 hours.
+    - paragraph [ref=e66]: © 2024 Club Nightlife. All rights reserved.
+  - alert [ref=e67]
+```

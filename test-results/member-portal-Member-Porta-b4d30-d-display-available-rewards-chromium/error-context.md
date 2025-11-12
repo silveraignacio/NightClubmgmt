@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e8]: CN
+      - heading "Club Nightlife" [level=1] [ref=e9]
+      - paragraph [ref=e10]: Modern Nightclub Management Platform
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Sign In" [level=2] [ref=e14]
+        - paragraph [ref=e15]: Enter your credentials to access your account
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: Email Address
+          - generic [ref=e19]:
+            - generic:
+              - img
+            - textbox "Email Address" [ref=e20]:
+              - /placeholder: you@example.com
+        - generic [ref=e22]:
+          - generic [ref=e23]: Password
+          - generic [ref=e24]:
+            - generic:
+              - img
+            - textbox "Password" [ref=e25]:
+              - /placeholder: ••••••••
+            - generic:
+              - button "Show password":
+                - img
+        - generic [ref=e26]:
+          - generic [ref=e27] [cursor=pointer]:
+            - checkbox "Remember me" [ref=e28]
+            - generic [ref=e29]: Remember me
+          - link "Forgot password?" [ref=e30] [cursor=pointer]:
+            - /url: /auth/forgot-password
+        - button "Sign In" [ref=e31] [cursor=pointer]:
+          - generic [ref=e32]: Sign In
+      - generic [ref=e37]: Don't have an account?
+      - generic [ref=e38]:
+        - link "Register Club" [ref=e39] [cursor=pointer]:
+          - /url: /auth/register-club
+          - button "Register Club" [ref=e40]:
+            - generic [ref=e41]: Register Club
+        - link "Join as Member" [ref=e42] [cursor=pointer]:
+          - /url: /auth/register-member
+          - button "Join as Member" [ref=e43]:
+            - generic [ref=e44]: Join as Member
+      - paragraph [ref=e46]: "Demo: Use any credentials for testing. Contact support for production access."
+    - paragraph [ref=e48]: © 2024 Club Nightlife. All rights reserved.
+```

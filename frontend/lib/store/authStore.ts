@@ -93,6 +93,7 @@ export const useAuthStore = create<AuthState>()(
        */
       login: async (email: string, password: string) => {
         try {
+          console.log('🔐 Login attempt:', email);
           set({ isLoading: true, error: null });
 
           // Validate inputs
@@ -101,12 +102,28 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Make login request
+          console.log('📡 Sending login request to:', `${API_BASE_URL}/api/auth/login`);
           const response = await authAPI.post<any>("/auth/login", {
             email,
             password,
           });
 
+          console.log('✅ Login response:', response.data);
+
           const { user, token } = response.data.data;
+
+          if (!user || !token) {
+            console.error('❌ Invalid response structure:', response.data);
+            throw new Error('Invalid response from server');
+          }
+
+          console.log('👤 User:', user);
+          console.log('🔑 Token:', token.substring(0, 20) + '...');
+
+          // Set authorization header
+          authAPI.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${token}`;
 
           // Update state
           set({
@@ -117,14 +134,21 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          // Set authorization header
-          authAPI.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${token}`;
+          // Manually save to localStorage as fallback
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auth-token', token);
+            localStorage.setItem('auth-user', JSON.stringify(user));
+          }
 
-          return;
+          console.log('✅ Login successful, state updated');
+          console.log('🔄 isAuthenticated:', true);
+          console.log('💾 Saved to localStorage');
+
+          return true;
         } catch (error) {
+          console.error('❌ Login error:', error);
           const errorMessage = handleAuthError(error);
+          console.error('❌ Error message:', errorMessage);
           set({
             user: null,
             token: null,
@@ -190,7 +214,7 @@ export const useAuthStore = create<AuthState>()(
             "Authorization"
           ] = `Bearer ${token}`;
 
-          return;
+          return true;
         } catch (error) {
           const errorMessage = handleAuthError(error);
           set({
@@ -220,31 +244,36 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               error: null,
             });
-            return;
+            return false;
           }
 
           // Set authorization header
           authAPI.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
           // Verify token with backend
-          const response = await authAPI.get<{ user: User }>(
+          const response = await authAPI.get<any>(
             "/auth/verify",
             {
               timeout: 5000,
             }
           );
 
-          const { user } = response.data;
+          // Backend returns { status: 'success', data: { valid: true, user: {...} } }
+          const user = response.data.data?.user;
 
-          set({
-            user,
-            isAuthenticated: true,
-            error: null,
-          });
-
-          return;
+          if (user) {
+            set({
+              user,
+              isAuthenticated: true,
+              error: null,
+            });
+            return true;
+          } else {
+            throw new Error('Invalid response from server');
+          }
         } catch (error) {
           // Token is invalid or expired
+          console.error('Auth check failed:', error);
           set({
             user: null,
             token: null,
@@ -252,6 +281,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
           delete authAPI.defaults.headers.common["Authorization"];
+          return false;
         }
       },
 
@@ -299,16 +329,97 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-store", // Name of the storage
+      storage: {
+        getItem: (name) => {
+          if (typeof window === 'undefined') return null;
+
+          // Try to get from auth-store first
+          const storeData = localStorage.getItem(name);
+          let parsedStore = null;
+
+          if (storeData) {
+            try {
+              parsedStore = JSON.parse(storeData);
+              // Check if store has valid data
+              if (parsedStore?.state?.token && parsedStore?.state?.user) {
+                console.log('✅ Loading from auth-store');
+                return parsedStore;
+              }
+            } catch (e) {
+              console.error('Failed to parse auth-store:', e);
+            }
+          }
+
+          // Fallback: try to reconstruct from individual keys
+          const token = localStorage.getItem('auth-token');
+          const userStr = localStorage.getItem('auth-user');
+
+          if (token && userStr) {
+            try {
+              const user = JSON.parse(userStr);
+              console.log('✅ Loading from fallback keys (auth-token + auth-user)');
+              const reconstructed = {
+                state: {
+                  token,
+                  user,
+                },
+                version: 0
+              };
+              // Save reconstructed data to auth-store for next time
+              localStorage.setItem(name, JSON.stringify(reconstructed));
+              return reconstructed;
+            } catch (e) {
+              console.error('Failed to parse fallback auth data:', e);
+            }
+          }
+
+          console.log('❌ No auth data found');
+          return null;
+        },
+        setItem: (name, value) => {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(name, JSON.stringify(value));
+            // Also save to fallback keys
+            if (value?.state?.token) {
+              localStorage.setItem('auth-token', value.state.token);
+            }
+            if (value?.state?.user) {
+              localStorage.setItem('auth-user', JSON.stringify(value.state.user));
+            }
+          }
+        },
+        removeItem: (name) => {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(name);
+            localStorage.removeItem('auth-token');
+            localStorage.removeItem('auth-user');
+          }
+        },
+      },
       partialize: (state) => ({
         token: state.token,
         user: state.user,
-      }), // Only persist token and user
-      onRehydrateStorage: () => (state) => {
-        // Set authorization header after hydration
-        if (state?.token) {
+        isAuthenticated: state.isAuthenticated,
+      }) as any, // Persist token, user, and isAuthenticated
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('❌ Rehydration error:', error);
+          return;
+        }
+
+        console.log('🔄 Rehydrating auth state:', state);
+
+        // Set authorization header and isAuthenticated after hydration
+        if (state?.token && state?.user) {
           authAPI.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${state.token}`;
+
+          // IMPORTANT: Update isAuthenticated to true when we have valid credentials
+          state.isAuthenticated = true;
+
+          console.log('✅ Authorization header set from rehydration');
+          console.log('✅ isAuthenticated set to true');
         }
       },
     }

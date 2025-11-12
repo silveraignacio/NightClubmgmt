@@ -72,10 +72,10 @@ export interface AuthState {
   setToken: (token: string | null) => void;
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
   clearError: () => void;
 }
 

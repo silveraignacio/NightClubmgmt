@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
 
     // Role-based redirect
-    if (user && pathname === '/admin') {
+    if (user && user.role && pathname === '/admin') {
       const role = user.role.toLowerCase();
 
       // Doorman/Security role - redirect to door
@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   // If not authenticated, return null (will redirect)
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !user || !user.role) {
     return null;
   }
 
@@ -69,24 +69,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const items: SidebarMenuItem[] = [];
 
     // Admin and Manager roles - full access
-    if (role === 'club_owner' || role === 'club_manager' || role === 'super_admin') {
+    if (role === 'admin' || role === 'club_owner' || role === 'club_manager' || role === 'super_admin') {
       items.push(
         {
           label: 'Dashboard',
           href: '/admin',
           icon: <LayoutDashboard className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
         },
         {
           label: 'Members',
           href: '/admin/members',
           icon: <Users className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
         },
         {
           label: 'Analytics',
           icon: <BarChart3 className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
           children: [
             {
               label: 'Visits',
@@ -104,19 +104,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           label: 'Door Control',
           href: '/admin/door',
           icon: <DoorOpen className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
         },
         {
           label: 'Bar & POS',
           href: '/admin/bar',
           icon: <Wine className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
         },
         {
           label: 'Settings',
           href: '/admin/settings',
           icon: <Settings className="h-5 w-5" />,
-          requiredRoles: ['club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
         }
       );
     }
@@ -160,7 +160,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           id: user.id,
           name: user.fullName,
           email: user.email,
-          role: user.role.replace('_', ' ').toUpperCase(),
+          role: user.role ? user.role.replace('_', ' ').toUpperCase() : 'USER',
           avatar: user.profileImage,
         }}
         onLogout={handleLogout}

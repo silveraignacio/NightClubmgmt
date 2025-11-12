@@ -105,7 +105,7 @@ const Navbar = React.forwardRef<HTMLDivElement, NavbarProps>(
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
                         <span className="text-sm font-semibold text-purple-600">
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                         </span>
                       </div>
                     )}
