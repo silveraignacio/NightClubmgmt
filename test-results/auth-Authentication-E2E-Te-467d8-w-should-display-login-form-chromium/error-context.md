@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e7]: CN
+      - heading "Club Nightlife" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Modern Nightclub Management Platform
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - heading "Sign In" [level=2] [ref=e13]
+        - paragraph [ref=e14]: Enter your credentials to access your account
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: Email Address
+          - generic [ref=e18]:
+            - generic:
+              - img
+            - textbox "Email Address" [ref=e19]:
+              - /placeholder: you@example.com
+        - generic [ref=e21]:
+          - generic [ref=e22]: Password
+          - generic [ref=e23]:
+            - generic:
+              - img
+            - textbox "Password" [ref=e24]:
+              - /placeholder: ••••••••
+            - generic:
+              - button "Show password":
+                - img
+        - generic [ref=e25]:
+          - generic [ref=e26] [cursor=pointer]:
+            - checkbox "Remember me" [ref=e27]
+            - generic [ref=e28]: Remember me
+          - link "Forgot password?" [ref=e29] [cursor=pointer]:
+            - /url: /auth/forgot-password
+        - button "Sign In" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: Sign In
+      - generic [ref=e36]: Don't have an account?
+      - generic [ref=e37]:
+        - link "Register Club" [ref=e38] [cursor=pointer]:
+          - /url: /auth/register-club
+          - button "Register Club" [ref=e39]:
+            - generic [ref=e40]: Register Club
+        - link "Join as Member" [ref=e41] [cursor=pointer]:
+          - /url: /auth/register-member
+          - button "Join as Member" [ref=e42]:
+            - generic [ref=e43]: Join as Member
+      - paragraph [ref=e45]: "Demo: Use any credentials for testing. Contact support for production access."
+    - paragraph [ref=e47]: © 2024 Club Nightlife. All rights reserved.
+  - alert [ref=e48]
+```

@@ -1,0 +1,374 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img [ref=e7]
+          - generic [ref=e9]: Club Nightlife
+        - generic [ref=e10]:
+          - link "Features" [ref=e11] [cursor=pointer]:
+            - /url: "#features"
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: "#pricing"
+          - link "FAQ" [ref=e13] [cursor=pointer]:
+            - /url: "#faq"
+          - link "Sign In" [ref=e14] [cursor=pointer]:
+            - /url: /login
+          - link "Start Free Trial" [ref=e15] [cursor=pointer]:
+            - /url: /register-club
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e20]:
+          - img [ref=e21]
+          - text: The Future of Nightclub Management
+        - heading "Transform Your Nightclub Operations Overnight" [level=1] [ref=e23]:
+          - text: Transform Your Nightclub
+          - text: Operations Overnight
+        - paragraph [ref=e24]: Say goodbye to paper lists and manual tracking. Club Nightlife brings modern technology to your venue with QR check-ins, automated loyalty programs, and real-time analytics that drive revenue.
+        - generic [ref=e25]:
+          - link "Start Free Trial" [ref=e26] [cursor=pointer]:
+            - /url: /register-club
+            - text: Start Free Trial
+            - img [ref=e27]
+          - button "Watch Demo" [ref=e29] [cursor=pointer]
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - img [ref=e32]
+            - generic [ref=e34]: 14-day free trial
+          - generic [ref=e35]:
+            - img [ref=e36]
+            - generic [ref=e38]: No credit card required
+          - generic [ref=e39]:
+            - img [ref=e40]
+            - generic [ref=e42]: Cancel anytime
+      - generic [ref=e43]:
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - img [ref=e48]
+            - img [ref=e54]
+            - img [ref=e56]
+          - paragraph [ref=e62]: Platform Dashboard Preview
+        - generic [ref=e64]:
+          - img [ref=e66]
+          - generic [ref=e68]:
+            - generic [ref=e69]: Check-in Complete
+            - generic [ref=e70]: John Doe verified
+        - generic [ref=e72]:
+          - img [ref=e73]
+          - generic [ref=e76]:
+            - generic [ref=e77]: +127%
+            - generic [ref=e78]: Revenue increase
+    - generic [ref=e81]:
+      - generic [ref=e82]:
+        - generic [ref=e83]: 500+
+        - generic [ref=e84]: Clubs Worldwide
+      - generic [ref=e85]:
+        - generic [ref=e86]: 100K+
+        - generic [ref=e87]: Active Members
+      - generic [ref=e88]:
+        - generic [ref=e89]: 1M+
+        - generic [ref=e90]: Check-ins Monthly
+      - generic [ref=e91]:
+        - generic [ref=e92]: 99.9%
+        - generic [ref=e93]: Uptime SLA
+    - generic [ref=e95]:
+      - generic [ref=e96]:
+        - heading "Everything You Need to Scale Your Venue" [level=2] [ref=e97]
+        - paragraph [ref=e98]: Powerful features designed specifically for modern nightclub operations
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - img [ref=e102]
+          - heading "QR Code Check-ins" [level=3] [ref=e108]
+          - paragraph [ref=e109]: Eliminate long lines and paper lists. Members scan their unique QR code for instant entry. Track attendance in real-time with our lightning-fast verification system.
+          - list [ref=e110]:
+            - listitem [ref=e111]:
+              - img [ref=e112]
+              - generic [ref=e114]: Instant verification in under 1 second
+            - listitem [ref=e115]:
+              - img [ref=e116]
+              - generic [ref=e118]: Works offline with sync when connected
+            - listitem [ref=e119]:
+              - img [ref=e120]
+              - generic [ref=e122]: Fraud detection & duplicate prevention
+        - generic [ref=e123]:
+          - img [ref=e125]
+          - heading "Loyalty Rewards" [level=3] [ref=e131]
+          - paragraph [ref=e132]: Keep your best customers coming back. Automatically award points for visits, spending, and referrals. Create custom rewards and tier systems that drive repeat business.
+          - list [ref=e133]:
+            - listitem [ref=e134]:
+              - img [ref=e135]
+              - generic [ref=e137]: Automated point calculation & tracking
+            - listitem [ref=e138]:
+              - img [ref=e139]
+              - generic [ref=e141]: Multi-tier VIP membership levels
+            - listitem [ref=e142]:
+              - img [ref=e143]
+              - generic [ref=e145]: Custom rewards & redemption rules
+        - generic [ref=e146]:
+          - img [ref=e148]
+          - heading "Real-time Analytics" [level=3] [ref=e150]
+          - paragraph [ref=e151]: Make data-driven decisions with comprehensive insights. Track attendance patterns, revenue metrics, and member behavior. Export reports for accounting and marketing.
+          - list [ref=e152]:
+            - listitem [ref=e153]:
+              - img [ref=e154]
+              - generic [ref=e156]: Live dashboard with key metrics
+            - listitem [ref=e157]:
+              - img [ref=e158]
+              - generic [ref=e160]: Custom reports & scheduled exports
+            - listitem [ref=e161]:
+              - img [ref=e162]
+              - generic [ref=e164]: Predictive insights & recommendations
+      - generic [ref=e165]:
+        - generic [ref=e166]:
+          - img [ref=e167]
+          - heading "Enterprise Security" [level=4] [ref=e169]
+          - paragraph [ref=e170]: Bank-level encryption and compliance
+        - generic [ref=e171]:
+          - img [ref=e172]
+          - heading "Team Management" [level=4] [ref=e177]
+          - paragraph [ref=e178]: Role-based access control
+        - generic [ref=e179]:
+          - img [ref=e180]
+          - heading "API Integration" [level=4] [ref=e182]
+          - paragraph [ref=e183]: Connect with your existing tools
+        - generic [ref=e184]:
+          - img [ref=e185]
+          - heading "24/7 Support" [level=4] [ref=e187]
+          - paragraph [ref=e188]: We're here when you need us
+    - generic [ref=e190]:
+      - generic [ref=e191]:
+        - heading "Simple, Transparent Pricing" [level=2] [ref=e192]
+        - paragraph [ref=e193]: Choose the plan that fits your venue. All plans include 14-day free trial.
+      - generic [ref=e194]:
+        - generic [ref=e195]:
+          - generic [ref=e196]:
+            - heading "Basic" [level=3] [ref=e197]
+            - paragraph [ref=e198]: Perfect for small clubs getting started
+          - generic [ref=e200]:
+            - generic [ref=e201]: $49
+            - generic [ref=e202]: /month
+          - link "Start Basic Trial" [ref=e203] [cursor=pointer]:
+            - /url: /register-club
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - img [ref=e206]
+              - generic [ref=e208]: QR Code Check-ins
+            - generic [ref=e209]:
+              - img [ref=e210]
+              - generic [ref=e212]: Up to 500 members
+            - generic [ref=e213]:
+              - img [ref=e214]
+              - generic [ref=e216]: Basic analytics dashboard
+            - generic [ref=e217]:
+              - img [ref=e218]
+              - generic [ref=e220]: Email support
+            - generic [ref=e221]:
+              - img [ref=e222]
+              - generic [ref=e224]: Mobile app access
+            - generic [ref=e225]:
+              - img [ref=e226]
+              - generic [ref=e228]: 1 location
+            - generic [ref=e229]:
+              - img [ref=e230]
+              - generic [ref=e233]: Loyalty points system
+            - generic [ref=e234]:
+              - img [ref=e235]
+              - generic [ref=e238]: Advanced analytics
+            - generic [ref=e239]:
+              - img [ref=e240]
+              - generic [ref=e243]: Priority support
+        - generic [ref=e244]:
+          - generic [ref=e245]: Most Popular
+          - generic [ref=e246]:
+            - heading "Pro" [level=3] [ref=e247]
+            - paragraph [ref=e248]: For growing clubs with ambitious goals
+          - generic [ref=e250]:
+            - generic [ref=e251]: $149
+            - generic [ref=e252]: /month
+          - link "Start Pro Trial" [ref=e253] [cursor=pointer]:
+            - /url: /register-club
+          - generic [ref=e254]:
+            - generic [ref=e255]:
+              - img [ref=e256]
+              - generic [ref=e258]: Everything in Basic
+            - generic [ref=e259]:
+              - img [ref=e260]
+              - generic [ref=e262]: Up to 5,000 members
+            - generic [ref=e263]:
+              - img [ref=e264]
+              - generic [ref=e266]: Loyalty points system
+            - generic [ref=e267]:
+              - img [ref=e268]
+              - generic [ref=e270]: Advanced analytics
+            - generic [ref=e271]:
+              - img [ref=e272]
+              - generic [ref=e274]: SMS notifications
+            - generic [ref=e275]:
+              - img [ref=e276]
+              - generic [ref=e278]: Priority support
+            - generic [ref=e279]:
+              - img [ref=e280]
+              - generic [ref=e282]: Up to 3 locations
+            - generic [ref=e283]:
+              - img [ref=e284]
+              - generic [ref=e286]: Custom branding
+            - generic [ref=e287]:
+              - img [ref=e288]
+              - generic [ref=e290]: API access
+        - generic [ref=e291]:
+          - generic [ref=e292]:
+            - heading "Premium" [level=3] [ref=e293]
+            - paragraph [ref=e294]: For established venues needing enterprise features
+          - generic [ref=e296]:
+            - generic [ref=e297]: $349
+            - generic [ref=e298]: /month
+          - link "Contact Sales" [ref=e299] [cursor=pointer]:
+            - /url: /register-club
+          - generic [ref=e300]:
+            - generic [ref=e301]:
+              - img [ref=e302]
+              - generic [ref=e304]: Everything in Pro
+            - generic [ref=e305]:
+              - img [ref=e306]
+              - generic [ref=e308]: Unlimited members
+            - generic [ref=e309]:
+              - img [ref=e310]
+              - generic [ref=e312]: White-label solution
+            - generic [ref=e313]:
+              - img [ref=e314]
+              - generic [ref=e316]: Dedicated account manager
+            - generic [ref=e317]:
+              - img [ref=e318]
+              - generic [ref=e320]: 24/7 phone support
+            - generic [ref=e321]:
+              - img [ref=e322]
+              - generic [ref=e324]: Unlimited locations
+            - generic [ref=e325]:
+              - img [ref=e326]
+              - generic [ref=e328]: Custom integrations
+            - generic [ref=e329]:
+              - img [ref=e330]
+              - generic [ref=e332]: Advanced security features
+            - generic [ref=e333]:
+              - img [ref=e334]
+              - generic [ref=e336]: Custom reporting
+            - generic [ref=e337]:
+              - img [ref=e338]
+              - generic [ref=e340]: Onboarding & training
+      - generic [ref=e341]:
+        - paragraph [ref=e342]: All plans include core features, mobile apps, and regular updates
+        - button "Compare all features →" [ref=e343] [cursor=pointer]
+    - generic [ref=e345]:
+      - generic [ref=e346]:
+        - heading "Frequently Asked Questions" [level=2] [ref=e347]
+        - paragraph [ref=e348]: Everything you need to know about Club Nightlife
+      - generic [ref=e349]:
+        - button "How does the free trial work?" [ref=e351] [cursor=pointer]:
+          - generic [ref=e352]: How does the free trial work?
+          - img [ref=e353]
+        - button "Can I change plans later?" [ref=e356] [cursor=pointer]:
+          - generic [ref=e357]: Can I change plans later?
+          - img [ref=e358]
+        - button "What happens to my data if I cancel?" [ref=e361] [cursor=pointer]:
+          - generic [ref=e362]: What happens to my data if I cancel?
+          - img [ref=e363]
+        - button "Do you offer custom enterprise solutions?" [ref=e366] [cursor=pointer]:
+          - generic [ref=e367]: Do you offer custom enterprise solutions?
+          - img [ref=e368]
+        - button "Is there a setup fee?" [ref=e371] [cursor=pointer]:
+          - generic [ref=e372]: Is there a setup fee?
+          - img [ref=e373]
+        - button "What payment methods do you accept?" [ref=e376] [cursor=pointer]:
+          - generic [ref=e377]: What payment methods do you accept?
+          - img [ref=e378]
+      - generic [ref=e380]:
+        - heading "Still have questions?" [level=3] [ref=e381]
+        - paragraph [ref=e382]: Our team is here to help you get started
+        - button "Contact Support" [ref=e383] [cursor=pointer]
+    - generic [ref=e385]:
+      - heading "Ready to Transform Your Nightclub?" [level=2] [ref=e386]
+      - paragraph [ref=e387]: Join 500+ clubs worldwide using Club Nightlife to streamline operations and increase revenue. Start your free trial today.
+      - generic [ref=e388]:
+        - link "Start Free Trial" [ref=e389] [cursor=pointer]:
+          - /url: /register-club
+          - text: Start Free Trial
+          - img [ref=e390]
+        - button "Schedule Demo" [ref=e392] [cursor=pointer]
+      - paragraph [ref=e393]: No credit card required • 14-day free trial • Cancel anytime
+    - contentinfo [ref=e394]:
+      - generic [ref=e395]:
+        - generic [ref=e396]:
+          - generic [ref=e397]:
+            - generic [ref=e398]:
+              - img [ref=e399]
+              - generic [ref=e401]: Club Nightlife
+            - paragraph [ref=e402]: Modern nightclub management platform trusted by venues worldwide.
+            - generic [ref=e403]:
+              - link [ref=e404] [cursor=pointer]:
+                - /url: "#"
+                - img [ref=e405]
+              - link [ref=e407] [cursor=pointer]:
+                - /url: "#"
+                - img [ref=e408]
+              - link [ref=e412] [cursor=pointer]:
+                - /url: "#"
+                - img [ref=e413]
+          - generic [ref=e416]:
+            - heading "Product" [level=4] [ref=e417]
+            - list [ref=e418]:
+              - listitem [ref=e419]:
+                - link "Features" [ref=e420] [cursor=pointer]:
+                  - /url: "#features"
+              - listitem [ref=e421]:
+                - link "Pricing" [ref=e422] [cursor=pointer]:
+                  - /url: "#pricing"
+              - listitem [ref=e423]:
+                - link "Security" [ref=e424] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e425]:
+                - link "Roadmap" [ref=e426] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=e427]:
+            - heading "Company" [level=4] [ref=e428]
+            - list [ref=e429]:
+              - listitem [ref=e430]:
+                - link "About" [ref=e431] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e432]:
+                - link "Blog" [ref=e433] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e434]:
+                - link "Careers" [ref=e435] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e436]:
+                - link "Contact" [ref=e437] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=e438]:
+            - heading "Resources" [level=4] [ref=e439]
+            - list [ref=e440]:
+              - listitem [ref=e441]:
+                - link "Documentation" [ref=e442] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e443]:
+                - link "API Reference" [ref=e444] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e445]:
+                - link "Support" [ref=e446] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e447]:
+                - link "Status" [ref=e448] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=e449]:
+          - paragraph [ref=e450]: © 2025 Club Nightlife. All rights reserved.
+          - generic [ref=e451]:
+            - link "Privacy Policy" [ref=e452] [cursor=pointer]:
+              - /url: /privacy
+            - link "Terms of Service" [ref=e453] [cursor=pointer]:
+              - /url: /terms
+            - link "Cookie Policy" [ref=e454] [cursor=pointer]:
+              - /url: /cookies
+  - alert [ref=e455]
+```

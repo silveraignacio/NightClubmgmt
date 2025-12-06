@@ -1,0 +1,476 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import { PageLoader } from '@/components/Loading';
+import {
+  createVisit,
+  getMember,
+  getVisits,
+  Member,
+  Visit,
+} from '@/lib';
+import {
+  QrCode,
+  Camera,
+  CheckCircle,
+  XCircle,
+  Users,
+  Clock,
+  AlertCircle,
+  UserCheck,
+  Smartphone,
+} from 'lucide-react';
+
+interface ScanResult {
+  success: boolean;
+  member?: Member;
+  message: string;
+}
+
+export default function DoorPage() {
+  const { user } = useAuth();
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [guestCount, setGuestCount] = useState(0);
+  const [recentEntries, setRecentEntries] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [manualMemberId, setManualMemberId] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (user?.clubId) {
+      loadRecentEntries();
+    }
+
+    // Cleanup camera on unmount
+    return () => {
+      stopCamera();
+    };
+  }, [user]);
+
+  const loadRecentEntries = async () => {
+    if (!user?.clubId) return;
+
+    try {
+      const response = await getVisits(user.clubId, {
+        page: 1,
+        pageSize: 10,
+        sortBy: 'checkInTime',
+        sortOrder: 'desc',
+      });
+      setRecentEntries(response.data);
+    } catch (err) {
+      console.error('Failed to load recent entries:', err);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+      }
+
+      setScanning(true);
+    } catch (err) {
+      console.error('Failed to access camera:', err);
+      alert('Unable to access camera. Please check permissions.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setScanning(false);
+  };
+
+  const handleScan = async (data: string | null) => {
+    if (!data || !user?.clubId) return;
+
+    setLoading(true);
+    stopCamera();
+
+    try {
+      // Extract member ID from QR code data
+      // Assuming QR code contains member ID
+      const memberId = data;
+
+      const member = await getMember(user.clubId, memberId);
+
+      if (member.status !== 'ACTIVE') {
+        setScanResult({
+          success: false,
+          message: `Member account is ${member.status.toLowerCase()}`,
+        });
+        return;
+      }
+
+      setScanResult({
+        success: true,
+        member,
+        message: 'Member verified successfully!',
+      });
+      setSelectedMember(member);
+    } catch (err: any) {
+      setScanResult({
+        success: false,
+        message: err.message || 'Failed to verify member',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualScan = async () => {
+    if (!manualMemberId.trim() || !user?.clubId) return;
+    handleScan(manualMemberId.trim());
+  };
+
+  const confirmEntry = async () => {
+    if (!selectedMember || !user?.clubId) return;
+
+    setLoading(true);
+
+    try {
+      await createVisit(user.clubId, {
+        memberId: selectedMember.id,
+        entryMethod: scanning ? 'QR_CODE' : 'MANUAL',
+        guestCount,
+        checkInTime: new Date().toISOString(),
+      });
+
+      // Show success message
+      setScanResult({
+        success: true,
+        message: 'Entry confirmed successfully!',
+      });
+
+      // Reset state
+      setTimeout(() => {
+        setSelectedMember(null);
+        setScanResult(null);
+        setGuestCount(0);
+        setManualMemberId('');
+        loadRecentEntries();
+      }, 2000);
+    } catch (err: any) {
+      setScanResult({
+        success: false,
+        message: err.message || 'Failed to confirm entry',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getTierColor = (tier: string) => {
+    const colors = {
+      BRONZE: 'bg-orange-100 text-orange-800 border-orange-300',
+      SILVER: 'bg-gray-100 text-gray-800 border-gray-300',
+      GOLD: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      PLATINUM: 'bg-purple-100 text-purple-800 border-purple-300',
+    };
+    return colors[tier as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (!user) {
+    return <PageLoader message="Loading..." />;
+  }
+
+  return (
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Door Control</h1>
+        <p className="text-lg text-gray-600">
+          Scan member QR codes to verify and confirm entry
+        </p>
+      </div>
+
+      {/* Main Scanner Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Scanner Card */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-6 w-6" />
+              QR Code Scanner
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Camera View */}
+            {scanning ? (
+              <div className="relative aspect-square bg-gray-900 rounded-lg overflow-hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 border-4 border-purple-500 rounded-lg pointer-events-none">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white rounded-lg"></div>
+                </div>
+                <Button
+                  variant="danger"
+                  size="lg"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2"
+                  onClick={stopCamera}
+                >
+                  Stop Scanning
+                </Button>
+              </div>
+            ) : (
+              <div className="aspect-square bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <Camera className="h-24 w-24 text-purple-300 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">
+                    Camera ready to scan QR codes
+                  </p>
+                  <Button
+                    size="lg"
+                    leftIcon={<Camera className="h-5 w-5" />}
+                    onClick={startCamera}
+                    fullWidth
+                  >
+                    Start Camera
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Entry */}
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Or enter Member ID manually:
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter Member ID..."
+                  value={manualMemberId}
+                  onChange={(e) => setManualMemberId(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleManualScan();
+                    }
+                  }}
+                  fullWidth
+                  leftIcon={<Smartphone className="h-4 w-4" />}
+                />
+                <Button
+                  onClick={handleManualScan}
+                  disabled={!manualMemberId.trim() || loading}
+                  isLoading={loading}
+                >
+                  Verify
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Member Info Card */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-6 w-6" />
+              Member Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {scanResult && (
+              <div
+                className={`mb-6 p-4 rounded-lg border-2 ${
+                  scanResult.success
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {scanResult.success ? (
+                    <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-600 flex-shrink-0" />
+                  )}
+                  <p
+                    className={`font-medium ${
+                      scanResult.success ? 'text-green-800' : 'text-red-800'
+                    }`}
+                  >
+                    {scanResult.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedMember ? (
+              <div className="space-y-6">
+                {/* Member Details */}
+                <div className="text-center">
+                  <div className="h-24 w-24 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl font-bold text-purple-600">
+                      {selectedMember.firstName.charAt(0)}
+                      {selectedMember.lastName.charAt(0)}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {selectedMember.firstName} {selectedMember.lastName}
+                  </h3>
+                  <p className="text-gray-600">{selectedMember.email}</p>
+                </div>
+
+                {/* Tier Badge */}
+                <div className="flex justify-center">
+                  <span
+                    className={`inline-flex items-center px-6 py-2 rounded-full text-sm font-bold border-2 ${getTierColor(
+                      selectedMember.tier
+                    )}`}
+                  >
+                    {selectedMember.tier} TIER
+                  </span>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-900">
+                      {selectedMember.totalVisits}
+                    </p>
+                    <p className="text-sm text-blue-600">Total Visits</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-900">
+                      {selectedMember.points}
+                    </p>
+                    <p className="text-sm text-green-600">Points</p>
+                  </div>
+                </div>
+
+                {/* Guest Count */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Guests (Optional)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setGuestCount(Math.max(0, guestCount - 1))}
+                      disabled={guestCount === 0}
+                    >
+                      -
+                    </Button>
+                    <div className="flex-1 text-center">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {guestCount}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setGuestCount(guestCount + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Confirm Button */}
+                <Button
+                  size="lg"
+                  fullWidth
+                  leftIcon={<CheckCircle className="h-5 w-5" />}
+                  onClick={confirmEntry}
+                  isLoading={loading}
+                  disabled={loading}
+                >
+                  Confirm Entry
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <AlertCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No member scanned</p>
+                <p className="text-sm">Scan a QR code or enter Member ID to begin</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Entries */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-6 w-6" />
+            Recent Entries
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentEntries.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No recent entries</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {entry.memberName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {formatTime(entry.checkInTime)}
+                        {entry.guestCount > 0 && (
+                          <span className="ml-2">
+                            +{entry.guestCount}{' '}
+                            {entry.guestCount === 1 ? 'guest' : 'guests'}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {entry.entryMethod.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
