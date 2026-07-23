@@ -13,13 +13,25 @@ import pool from './config/database';
 
 // Import routes
 import authRoutes from './routes/auth';
+import clubsRoutes from './routes/clubs';
 import membersRoutes from './routes/members';
 import membershipTiersRoutes from './routes/membershipTiers';
 import visitsRoutes from './routes/visits';
 import transactionsRoutes from './routes/transactions';
 import metricsRoutes from './routes/metrics';
+import rewardsRoutes from './routes/rewards';
 
 dotenv.config();
+
+// Fail fast: without JWT_SECRET, authService falls back to signing tokens with
+// no secret at all (it throws) while login would otherwise appear to "work"
+// and every subsequent authenticated request would 500 on verification. Catch
+// the misconfiguration at boot instead of on the first real request.
+if (!process.env.JWT_SECRET) {
+  // eslint-disable-next-line no-console
+  console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
+  process.exit(1);
+}
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -89,11 +101,13 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api', clubsRoutes);
 app.use('/api', membersRoutes);
 app.use('/api', membershipTiersRoutes);
 app.use('/api', visitsRoutes);
 app.use('/api', transactionsRoutes);
 app.use('/api', metricsRoutes);
+app.use('/api', rewardsRoutes);
 
 // Test route
 app.get('/api', (_req: Request, res: Response) => {

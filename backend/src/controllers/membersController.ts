@@ -17,43 +17,53 @@ const MEMBER_COLUMNS = `
 
 export const getAllMembers = catchAsync(async (req: AuthRequest, res: Response) => {
   const clubId = req.clubId;
-  const { search, membershipType, limit = '50', offset = '0' } = req.query;
+  const { search, membershipType, tier, limit = '50', offset = '0' } = req.query;
 
-  let queryText = `
-    SELECT
-      ${MEMBER_COLUMNS},
-      mt.tier_name,
-      mt.color_hex,
-      mt.discount_percentage
-    FROM club_members cm
-    LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
-    WHERE cm.club_id = $1
-  `;
-
+  // Built once and reused for both the page and the total count, so the
+  // reported total always matches what the filters actually returned.
+  let whereClause = 'WHERE cm.club_id = $1';
   const params: any[] = [clubId];
   let paramIndex = 2;
 
   if (search) {
-    queryText += ` AND (cm.full_name ILIKE $${paramIndex} OR cm.email ILIKE $${paramIndex} OR cm.phone ILIKE $${paramIndex})`;
+    whereClause += ` AND (cm.full_name ILIKE $${paramIndex} OR cm.email ILIKE $${paramIndex} OR cm.phone ILIKE $${paramIndex})`;
     params.push(`%${search}%`);
     paramIndex++;
   }
 
   if (membershipType) {
-    queryText += ` AND cm.membership_type = $${paramIndex}`;
+    whereClause += ` AND cm.membership_type = $${paramIndex}`;
     params.push(membershipType);
     paramIndex++;
   }
 
-  queryText += ` ORDER BY cm.registration_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-  params.push(parseInt(limit as string), parseInt(offset as string));
+  if (tier) {
+    whereClause += ` AND mt.tier_name ILIKE $${paramIndex}`;
+    params.push(tier);
+    paramIndex++;
+  }
 
-  const result = await query(queryText, params);
+  const listParams = [...params, parseInt(limit as string), parseInt(offset as string)];
 
-  // Get total count
+  const result = await query(
+    `SELECT
+      ${MEMBER_COLUMNS},
+      mt.tier_name,
+      mt.color_hex,
+      mt.discount_percentage,
+      mt.points_multiplier
+    FROM club_members cm
+    LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
+    ${whereClause}
+    ORDER BY cm.registration_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+    listParams
+  );
+
   const countResult = await query(
-    'SELECT COUNT(*) FROM club_members WHERE club_id = $1',
-    [clubId]
+    `SELECT COUNT(*) FROM club_members cm
+     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
+     ${whereClause}`,
+    params
   );
 
   res.status(200).json({
@@ -77,6 +87,7 @@ export const getMemberById = catchAsync(async (req: AuthRequest, res: Response) 
       mt.tier_name,
       mt.color_hex,
       mt.discount_percentage,
+      mt.points_multiplier,
       mt.benefits
     FROM club_members cm
     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
@@ -138,7 +149,7 @@ export const updateMember = catchAsync(async (req: AuthRequest, res: Response) =
   const clubId = req.clubId;
   const updates = req.body;
 
-  const allowedFields = ['email', 'phone', 'full_name', 'profile_photo_url', 'notifications_enabled', 'sms_enabled'];
+  const allowedFields = ['email', 'phone', 'full_name', 'date_of_birth', 'profile_photo_url', 'notifications_enabled', 'sms_enabled'];
   const setClause: string[] = [];
   const values: any[] = [];
   let paramIndex = 1;
@@ -229,6 +240,56 @@ export const deleteMember = catchAsync(async (req: AuthRequest, res: Response) =
   res.status(204).send();
 });
 
+// Escape a value for a CSV cell: neutralize formula injection (a member name
+// like `=HYPERLINK(...)` would execute when opened in Excel/Sheets), then
+// wrap in quotes and double up any internal quotes.
+const csvCell = (value: unknown): string => {
+  let str = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@]/.test(str)) {
+    str = `'${str}`;
+  }
+  return `"${str.replace(/"/g, '""')}"`;
+};
+
+export const exportMembers = catchAsync(async (req: AuthRequest, res: Response) => {
+  const clubId = req.clubId;
+
+  const result = await query(
+    `SELECT
+      cm.full_name, cm.email, cm.phone, cm.membership_type, cm.points_balance,
+      cm.total_visits, cm.total_spent, cm.registration_date, mt.tier_name
+    FROM club_members cm
+    LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
+    WHERE cm.club_id = $1
+    ORDER BY cm.registration_date DESC`,
+    [clubId]
+  );
+
+  const header = ['Name', 'Email', 'Phone', 'Membership Type', 'Tier', 'Points', 'Total Visits', 'Total Spent', 'Joined'];
+  const rows = result.rows.map((m) =>
+    [
+      csvCell(m.full_name),
+      csvCell(m.email),
+      csvCell(m.phone),
+      csvCell(m.membership_type),
+      csvCell(m.tier_name),
+      csvCell(m.points_balance),
+      csvCell(m.total_visits),
+      csvCell(m.total_spent),
+      csvCell(m.registration_date),
+    ].join(',')
+  );
+
+  const csvContent = [header.map(csvCell).join(','), ...rows].join('\n');
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="members-${clubId}-${new Date().toISOString().split('T')[0]}.csv"`
+  );
+  res.status(200).send(csvContent);
+});
+
 export const getMemberByQrCode = catchAsync(async (req: AuthRequest, res: Response) => {
   const { qrCodeId } = req.params;
   const clubId = req.clubId;
@@ -238,7 +299,8 @@ export const getMemberByQrCode = catchAsync(async (req: AuthRequest, res: Respon
       ${MEMBER_COLUMNS},
       mt.tier_name,
       mt.color_hex,
-      mt.discount_percentage
+      mt.discount_percentage,
+      mt.points_multiplier
     FROM club_members cm
     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
     WHERE cm.qr_code_id = $1 AND cm.club_id = $2`,

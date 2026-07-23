@@ -14,6 +14,11 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
 // Member validation schemas
 export const memberRegistrationSchema = z.object({
   email: z.string().email('Invalid email address').optional(),
@@ -27,6 +32,7 @@ export const memberUpdateSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   fullName: z.string().min(2).optional(),
+  dateOfBirth: z.string().optional(),
   profilePhotoUrl: z.string().url().optional(),
   notificationsEnabled: z.boolean().optional(),
   smsEnabled: z.boolean().optional(),

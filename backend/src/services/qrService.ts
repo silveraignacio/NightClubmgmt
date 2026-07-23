@@ -27,7 +27,10 @@ export const generateQRCode = async (qrCodeId: string): Promise<string> => {
 const UUID_LENGTH = 36;
 
 export const validateQRCode = async (qrCodeId: string, clubId: string) => {
-  // If the QR code has a club ID embedded (our own generated format), verify it matches.
+  // This is only a friendly early error for staff scanning a QR from the
+  // wrong club — it is NOT the tenant-isolation boundary. That's enforced by
+  // `AND cm.club_id = $2` in the query below (and by ensureClubAccess
+  // upstream), so this check can't be bypassed by a differently-shaped ID.
   if (qrCodeId.length > UUID_LENGTH && qrCodeId[UUID_LENGTH] === '-') {
     const qrClubId = qrCodeId.substring(0, UUID_LENGTH);
 
@@ -61,29 +64,6 @@ export const validateQRCode = async (qrCodeId: string, clubId: string) => {
 
   if (result.rows.length === 0) {
     throw new AppError('Invalid QR code or member not found', 404);
-  }
-
-  return result.rows[0];
-};
-
-export const getMemberByQR = async (qrCodeId: string) => {
-  const result = await query(
-    `SELECT
-      cm.*,
-      mt.tier_name,
-      mt.color_hex,
-      mt.discount_percentage,
-      mt.benefits,
-      c.name as club_name
-    FROM club_members cm
-    LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
-    LEFT JOIN clubs c ON cm.club_id = c.id
-    WHERE cm.qr_code_id = $1`,
-    [qrCodeId]
-  );
-
-  if (result.rows.length === 0) {
-    throw new AppError('Member not found with this QR code', 404);
   }
 
   return result.rows[0];

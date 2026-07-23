@@ -113,7 +113,7 @@ export const getTransactions = async (
     const offset = (page - 1) * limit;
 
     const response = await apiClient.get<
-      ApiResponse<{ transactions: RawTransaction[]; totalAmount: number; limit: number; offset: number }>
+      ApiResponse<{ transactions: RawTransaction[]; total: number; totalAmount: number; limit: number; offset: number }>
     >(`/clubs/${clubId}/transactions`, {
       params: { startDate: params?.startDate, endDate: params?.endDate, limit, offset },
     });
@@ -124,12 +124,10 @@ export const getTransactions = async (
     const transactions = data.transactions.map((t) => mapTransaction(t));
     return {
       data: transactions,
-      // The backend doesn't return a total record count for this list (only totalAmount),
-      // so `total`/`totalPages` here are an approximation based on what's been fetched.
-      total: offset + transactions.length,
+      total: data.total,
       page,
       pageSize: limit,
-      totalPages: transactions.length < limit ? page : page + 1,
+      totalPages: Math.max(1, Math.ceil(data.total / limit)),
     };
   } catch (error) {
     throw handleApiError(error);

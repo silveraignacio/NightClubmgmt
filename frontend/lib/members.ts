@@ -11,12 +11,19 @@ export interface Member {
   joinDate: string;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | string;
+  // The member's tier's own discount/points-multiplier (source of truth for
+  // any client-side price/points preview — the backend applies these same
+  // values server-side when a transaction is created, see transactionsController.ts).
+  discountPercentage: number;
+  pointsMultiplier: number;
   points: number;
   totalVisits: number;
   totalSpent: number;
   lastVisit?: string;
   averageSpending: number;
   qrCodeUrl?: string;
+  notificationsEnabled: boolean;
+  smsEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,7 +67,10 @@ export interface GetMembersParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  // NOTE: there is no "status" concept in the schema (no active/inactive/
+  // suspended column on club_members) — every member the API returns is
+  // treated as ACTIVE. Don't add a status filter here without a real backend
+  // column behind it.
   tier?: string;
   sortBy?: 'name' | 'joinDate' | 'totalSpent' | 'visits';
   sortOrder?: 'asc' | 'desc';
@@ -80,7 +90,11 @@ interface RawMember {
   total_spent: string | number;
   last_visit: string | null;
   tier_name: string | null;
+  discount_percentage?: number | null;
+  points_multiplier?: string | number | null;
   qr_code_id: string;
+  notifications_enabled: boolean;
+  sms_enabled: boolean;
   created_at?: string;
   updated_at: string;
 }
@@ -105,11 +119,15 @@ function mapMember(raw: RawMember): Member {
     joinDate: raw.registration_date || raw.created_at || raw.updated_at,
     status: 'ACTIVE',
     tier: (raw.tier_name || 'BRONZE').toUpperCase(),
+    discountPercentage: raw.discount_percentage || 0,
+    pointsMultiplier: Number(raw.points_multiplier) || 1,
     points: raw.points_balance || 0,
     totalVisits,
     totalSpent,
     lastVisit: raw.last_visit || undefined,
     averageSpending: totalVisits > 0 ? totalSpent / totalVisits : 0,
+    notificationsEnabled: raw.notifications_enabled ?? true,
+    smsEnabled: raw.sms_enabled ?? false,
     createdAt: raw.created_at || raw.registration_date,
     updatedAt: raw.updated_at,
   };
@@ -134,7 +152,7 @@ export const getMembers = async (
     const response = await apiClient.get<
       ApiResponse<{ members: RawMember[]; total: number; limit: number; offset: number }>
     >(`/clubs/${clubId}/members`, {
-      params: { search: params?.search, limit, offset },
+      params: { search: params?.search, tier: params?.tier, limit, offset },
     });
 
     const data = response.data.data;
@@ -142,17 +160,8 @@ export const getMembers = async (
       return { data: [], total: 0, page: 1, pageSize: limit, totalPages: 0 };
     }
 
-    let members = data.members.map(mapMember);
-
-    if (params?.tier) {
-      members = members.filter((m) => m.tier === params.tier);
-    }
-    if (params?.status) {
-      members = members.filter((m) => m.status === params.status);
-    }
-
     return {
-      data: members,
+      data: data.members.map(mapMember),
       total: data.total,
       page,
       pageSize: limit,
@@ -283,11 +292,13 @@ export const getMemberStats = async (clubId: string, memberId: string): Promise<
 };
 
 // Fields the backend actually accepts on update (membersController.updateMember's
-// allowedFields: email, phone, full_name, profile_photo_url, notifications_enabled, sms_enabled).
+// allowedFields: email, phone, full_name, date_of_birth, profile_photo_url,
+// notifications_enabled, sms_enabled).
 export interface UpdateMemberData {
   fullName?: string;
   email?: string;
   phone?: string;
+  dateOfBirth?: string;
   profilePhotoUrl?: string;
   notificationsEnabled?: boolean;
   smsEnabled?: boolean;
@@ -309,6 +320,39 @@ export const updateMember = async (
 
     if (!response.data.data) throw new Error('Update failed');
     return mapMember(response.data.data.member);
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
+/**
+ * Delete a member
+ */
+export const deleteMember = async (clubId: string, memberId: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/clubs/${clubId}/members/${memberId}`);
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
+/**
+ * Export the club's members to a CSV file and trigger a browser download.
+ */
+export const exportMembersCsv = async (clubId: string, filename = 'members.csv'): Promise<void> => {
+  try {
+    const response = await apiClient.get(`/clubs/${clubId}/members/export`, {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     throw handleApiError(error);
   }

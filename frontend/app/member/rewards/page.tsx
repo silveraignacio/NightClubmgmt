@@ -3,9 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   getMemberStats,
-  getMember,
-  type Member,
+  getRewards,
+  redeemReward,
+  getMyRedeemedRewards,
   type MemberStats,
+  type Reward,
+  type RedeemedReward,
+  type RewardType,
 } from '@/lib';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
@@ -17,157 +21,32 @@ import {
   Button,
   PageLoader,
 } from '@/components';
-import { Gift, Check, Clock, Sparkles, Zap } from 'lucide-react';
+import { Gift, Check, Clock, Sparkles, Zap, XCircle } from 'lucide-react';
 
-/**
- * Reward Item Type
- */
-interface Reward {
-  id: string;
-  name: string;
-  description: string;
-  pointsRequired: number;
-  value: number;
-  category: 'drinks' | 'food' | 'vip' | 'experiences';
-  icon: React.ReactNode;
-  image?: string;
-  quantity?: number;
-  expiresIn?: number; // days
-}
-
-/**
- * Redeemed Reward Type
- */
-interface RedeemedReward {
-  id: string;
-  rewardId: string;
-  rewardName: string;
-  redeemedAt: string;
-  expiresAt: string;
-  code?: string;
-  used: boolean;
-}
+const CATEGORIES: Array<{ id: RewardType | 'all'; label: string }> = [
+  { id: 'all', label: 'All Rewards' },
+  { id: 'discount', label: 'Discounts' },
+  { id: 'free_item', label: 'Free Items' },
+  { id: 'free_entry', label: 'Free Entry' },
+  { id: 'merchandise', label: 'Merchandise' },
+];
 
 /**
  * Member Rewards Page
- * Displays available rewards and redemption history
+ * Displays the club's real reward catalog and lets a member redeem points for
+ * one. Backed by GET/POST /clubs/:clubId/rewards (see frontend/lib/rewards.ts).
  */
 export default function RewardsPage() {
   const { user } = useAuth();
-  const [member, setMember] = useState<Member | null>(null);
   const [stats, setStats] = useState<MemberStats | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [rewards, setRewards] = useState<Reward[]>([]);
   const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<RewardType | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [redeeming, setRedeeming] = useState<string | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Mock rewards catalog
-  const mockRewards: Reward[] = [
-    {
-      id: '1',
-      name: 'Free Cocktail',
-      description: 'One complimentary classic cocktail of your choice',
-      pointsRequired: 100,
-      value: 12,
-      category: 'drinks',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 30,
-    },
-    {
-      id: '2',
-      name: 'Premium Bottle Service',
-      description: 'Enjoy bottle service at our exclusive VIP booth',
-      pointsRequired: 500,
-      value: 150,
-      category: 'vip',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 60,
-    },
-    {
-      id: '3',
-      name: 'Appetizer Platter',
-      description: 'Delicious assorted appetizers from our kitchen',
-      pointsRequired: 150,
-      value: 25,
-      category: 'food',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 30,
-    },
-    {
-      id: '4',
-      name: 'VIP Table for 4',
-      description: 'Reserved VIP table for you and 3 guests',
-      pointsRequired: 750,
-      value: 300,
-      category: 'vip',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 90,
-    },
-    {
-      id: '5',
-      name: 'Premium Shots (5)',
-      description: 'Five premium shots from our finest collection',
-      pointsRequired: 200,
-      value: 50,
-      category: 'drinks',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 30,
-    },
-    {
-      id: '6',
-      name: 'DJ Request',
-      description: 'Request your favorite song during the night',
-      pointsRequired: 75,
-      value: 15,
-      category: 'experiences',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 7,
-    },
-    {
-      id: '7',
-      name: '25% Discount',
-      description: '25% off any food or beverage purchase',
-      pointsRequired: 250,
-      value: 75,
-      category: 'drinks',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 30,
-    },
-    {
-      id: '8',
-      name: 'VIP Entry Pass',
-      description: 'Skip the line and guaranteed entry (2 guests)',
-      pointsRequired: 300,
-      value: 100,
-      category: 'vip',
-      icon: <Sparkles className="w-6 h-6" />,
-      expiresIn: 60,
-    },
-  ];
-
-  // Mock redeemed rewards
-  const mockRedeemedRewards: RedeemedReward[] = [
-    {
-      id: 'r1',
-      rewardId: '1',
-      rewardName: 'Free Cocktail',
-      redeemedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() + 23 * 24 * 60 * 60 * 1000).toISOString(),
-      code: 'COCK-2024-11-04',
-      used: false,
-    },
-    {
-      id: 'r2',
-      rewardId: '6',
-      rewardName: 'DJ Request',
-      redeemedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      code: 'DJREQ-2024-11-09',
-      used: true,
-    },
-  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -177,14 +56,15 @@ export default function RewardsPage() {
         setLoading(true);
         setError(null);
 
-        const [memberData, statsData] = await Promise.all([
-          getMember(user.clubId, user.id),
+        const [statsData, rewardsData, redeemedData] = await Promise.all([
           getMemberStats(user.clubId, user.id),
+          getRewards(user.clubId),
+          getMyRedeemedRewards(user.clubId),
         ]);
 
-        setMember(memberData);
         setStats(statsData);
-        setRedeemedRewards(mockRedeemedRewards);
+        setRewards(rewardsData);
+        setRedeemedRewards(redeemedData);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to load rewards';
@@ -198,44 +78,24 @@ export default function RewardsPage() {
     fetchData();
   }, [user?.id, user?.clubId]);
 
-  // Handle reward redemption
   const handleRedeemReward = async (reward: Reward) => {
-    if (!stats || stats.points < reward.pointsRequired) {
-      setSuccessMessage(null);
-      return;
-    }
+    if (!user?.clubId || !stats || stats.points < reward.pointsRequired) return;
 
     try {
       setRedeeming(reward.id);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setRedeemError(null);
 
-      const newReward: RedeemedReward = {
-        id: `r${Date.now()}`,
-        rewardId: reward.id,
-        rewardName: reward.name,
-        redeemedAt: new Date().toISOString(),
-        expiresAt: new Date(
-          Date.now() + (reward.expiresIn || 30) * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        code: `${reward.name.toUpperCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        used: false,
-      };
+      const result = await redeemReward(user.clubId, reward.id);
 
-      setRedeemedRewards([newReward, ...redeemedRewards]);
+      setRedeemedRewards([result.redemption, ...redeemedRewards]);
+      setStats({ ...stats, points: result.pointsBalance });
       setSuccessMessage(`Successfully redeemed ${reward.name}!`);
       setTimeout(() => setSuccessMessage(null), 3000);
-
-      // In a real app, this would call an API to update the member's points
-      if (stats) {
-        setStats({
-          ...stats,
-          points: stats.points - reward.pointsRequired,
-        });
-      }
     } catch (err) {
-      setError('Failed to redeem reward. Please try again.');
-      console.error('Error redeeming reward:', err);
+      const message =
+        err instanceof Error ? err.message : 'Failed to redeem reward. Please try again.';
+      setRedeemError(message);
+      setTimeout(() => setRedeemError(null), 4000);
     } finally {
       setRedeeming(null);
     }
@@ -259,18 +119,10 @@ export default function RewardsPage() {
     );
   }
 
-  const categories = [
-    { id: 'all', label: 'All Rewards' },
-    { id: 'drinks', label: 'Drinks' },
-    { id: 'food', label: 'Food & Bites' },
-    { id: 'vip', label: 'VIP Access' },
-    { id: 'experiences', label: 'Experiences' },
-  ];
-
   const filteredRewards =
     selectedCategory === 'all'
-      ? mockRewards
-      : mockRewards.filter((r) => r.category === selectedCategory);
+      ? rewards
+      : rewards.filter((r) => r.rewardType === selectedCategory);
 
   return (
     <div className="space-y-8">
@@ -284,11 +136,17 @@ export default function RewardsPage() {
         </p>
       </div>
 
-      {/* Success Message */}
+      {/* Success / Error Messages */}
       {successMessage && (
         <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-4 text-green-300 flex items-center gap-2">
           <Check className="w-5 h-5" />
           {successMessage}
+        </div>
+      )}
+      {redeemError && (
+        <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-4 text-red-300 flex items-center gap-2">
+          <XCircle className="w-5 h-5" />
+          {redeemError}
         </div>
       )}
 
@@ -311,7 +169,7 @@ export default function RewardsPage() {
 
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
-        {categories.map((category) => (
+        {CATEGORIES.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
@@ -337,22 +195,18 @@ export default function RewardsPage() {
                 !canRedeem ? 'opacity-60' : ''
               }`}
             >
-              {/* Reward Image/Icon */}
               <div className="w-full h-40 bg-gradient-to-br from-purple-600/30 to-pink-600/30 border-b border-purple-500/20 flex items-center justify-center">
-                <div className="text-5xl opacity-20">{reward.icon}</div>
+                <Sparkles className="w-12 h-12 text-purple-300/40" />
               </div>
 
               <CardHeader>
-                <CardTitle className="text-white text-lg">
-                  {reward.name}
-                </CardTitle>
+                <CardTitle className="text-white text-lg">{reward.name}</CardTitle>
                 <CardDescription className="text-gray-400">
                   {reward.description}
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="flex-1 space-y-4">
-                {/* Points Required */}
                 <div className="bg-gray-700/50 rounded-lg p-3">
                   <p className="text-xs text-gray-400 mb-1">Points Required</p>
                   <div className="flex items-center justify-between">
@@ -365,24 +219,23 @@ export default function RewardsPage() {
                   </div>
                 </div>
 
-                {/* Value */}
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Estimated Value</span>
-                  <span className="text-green-400 font-semibold">
-                    ${reward.value}
-                  </span>
-                </div>
+                {reward.value > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-400">Estimated Value</span>
+                    <span className="text-green-400 font-semibold">
+                      ${reward.value}
+                    </span>
+                  </div>
+                )}
 
-                {/* Expires In */}
-                {reward.expiresIn && (
+                {reward.validUntil && (
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Clock className="w-4 h-4" />
-                    Expires in {reward.expiresIn} days
+                    Available until {new Date(reward.validUntil).toLocaleDateString()}
                   </div>
                 )}
               </CardContent>
 
-              {/* Redeem Button */}
               <div className="p-4 border-t border-gray-700">
                 <Button
                   variant={canRedeem ? 'primary' : 'secondary'}
@@ -411,83 +264,50 @@ export default function RewardsPage() {
           </div>
 
           <div className="space-y-4">
-            {redeemedRewards.map((reward) => {
-              const expiresAt = new Date(reward.expiresAt);
-              const isExpired = expiresAt < new Date();
-              const daysLeft = Math.ceil(
-                (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-              );
-
-              return (
-                <Card
-                  key={reward.id}
-                  className={`bg-gray-800/50 border-l-4 ${
-                    reward.used
-                      ? 'border-l-gray-500'
-                      : isExpired
-                        ? 'border-l-red-500'
-                        : 'border-l-green-500'
-                  } border-purple-500/30`}
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between flex-wrap gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-white">
-                            {reward.rewardName}
-                          </h3>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              reward.used
-                                ? 'bg-gray-700 text-gray-400'
-                                : isExpired
-                                  ? 'bg-red-900/30 text-red-400'
-                                  : 'bg-green-900/30 text-green-400'
-                            }`}
-                          >
-                            {reward.used
-                              ? 'Used'
-                              : isExpired
-                                ? 'Expired'
-                                : `Expires in ${daysLeft}d`}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400 mb-3">
-                          Redeemed on{' '}
-                          {new Date(reward.redeemedAt).toLocaleDateString()}
-                        </p>
-                        {!reward.used && !isExpired && reward.code && (
-                          <div className="bg-gray-700/50 rounded-lg p-3 inline-block">
-                            <p className="text-xs text-gray-400 mb-1">
-                              Redemption Code
-                            </p>
-                            <p className="text-mono font-bold text-white">
-                              {reward.code}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {!reward.used && !isExpired && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(reward.code || '');
-                            setSuccessMessage('Code copied to clipboard!');
-                            setTimeout(
-                              () => setSuccessMessage(null),
-                              2000
-                            );
-                          }}
+            {redeemedRewards.map((reward) => (
+              <Card
+                key={reward.id}
+                className={`bg-gray-800/50 border-l-4 ${
+                  reward.status === 'used'
+                    ? 'border-l-gray-500'
+                    : reward.status === 'expired'
+                      ? 'border-l-red-500'
+                      : 'border-l-green-500'
+                } border-purple-500/30`}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between flex-wrap gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-semibold text-white">
+                          {reward.rewardName}
+                        </h3>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            reward.status === 'used'
+                              ? 'bg-gray-700 text-gray-400'
+                              : reward.status === 'expired'
+                                ? 'bg-red-900/30 text-red-400'
+                                : 'bg-green-900/30 text-green-400'
+                          }`}
                         >
-                          Copy Code
-                        </Button>
-                      )}
+                          {reward.status === 'used'
+                            ? 'Used'
+                            : reward.status === 'expired'
+                              ? 'Expired'
+                              : 'Active'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400">
+                        Redeemed on {new Date(reward.redeemedAt).toLocaleDateString()}
+                        {' · '}
+                        {reward.pointsSpent} points spent
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </>
       )}
