@@ -13,6 +13,7 @@ export enum AuditActionType {
   MEMBER_DELETED = 'member.deleted',
   MEMBER_LOGIN = 'member.login',
   MEMBER_LOGOUT = 'member.logout',
+  MEMBER_DATA_EXPORTED = 'member.data_exported',
 
   // Visit actions
   VISIT_LOGGED = 'visit.logged',

@@ -58,7 +58,7 @@ export const validateQRCode = async (qrCodeId: string, clubId: string) => {
       mt.benefits
     FROM club_members cm
     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
-    WHERE cm.qr_code_id = $1 AND cm.club_id = $2`,
+    WHERE cm.qr_code_id = $1 AND cm.club_id = $2 AND cm.deleted_at IS NULL`,
     [qrCodeId, clubId]
   );
 

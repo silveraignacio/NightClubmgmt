@@ -21,7 +21,7 @@ export const getAllMembers = catchAsync(async (req: AuthRequest, res: Response) 
 
   // Built once and reused for both the page and the total count, so the
   // reported total always matches what the filters actually returned.
-  let whereClause = 'WHERE cm.club_id = $1';
+  let whereClause = 'WHERE cm.club_id = $1 AND cm.deleted_at IS NULL';
   const params: any[] = [clubId];
   let paramIndex = 2;
 
@@ -91,7 +91,7 @@ export const getMemberById = catchAsync(async (req: AuthRequest, res: Response) 
       mt.benefits
     FROM club_members cm
     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
-    WHERE cm.id = $1 AND cm.club_id = $2`,
+    WHERE cm.id = $1 AND cm.club_id = $2 AND cm.deleted_at IS NULL`,
     [memberId, clubId]
   );
 
@@ -303,7 +303,7 @@ export const getMemberByQrCode = catchAsync(async (req: AuthRequest, res: Respon
       mt.points_multiplier
     FROM club_members cm
     LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
-    WHERE cm.qr_code_id = $1 AND cm.club_id = $2`,
+    WHERE cm.qr_code_id = $1 AND cm.club_id = $2 AND cm.deleted_at IS NULL`,
     [qrCodeId, clubId]
   );
 
