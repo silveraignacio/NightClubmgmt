@@ -11,6 +11,7 @@ import {
   getTodayVisitsCount,
   getTodayRevenue,
   getVisits,
+  getMemberMetrics,
   Visit,
 } from '@/lib';
 import {
@@ -28,7 +29,7 @@ interface DashboardStats {
   todayVisits: number;
   todayRevenue: number;
   activeMembers: number;
-  pointsRedeemed: number;
+  totalMembers: number;
 }
 
 export default function AdminDashboard() {
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
     todayVisits: 0,
     todayRevenue: 0,
     activeMembers: 0,
-    pointsRedeemed: 0,
+    totalMembers: 0,
   });
   const [recentVisits, setRecentVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,23 +58,20 @@ export default function AdminDashboard() {
     setError(null);
 
     try {
-      // Fetch all stats in parallel
-      const [visitsCount, revenue, visitsData] = await Promise.all([
+      // Fetch all stats in parallel. Member metrics require admin/manager
+      // (see backend/src/routes/metrics.ts), so tolerate it failing for other roles.
+      const [visitsCount, revenue, visitsData, memberMetrics] = await Promise.all([
         getTodayVisitsCount(user.clubId),
         getTodayRevenue(user.clubId),
-        getVisits(user.clubId, {
-          page: 1,
-          pageSize: 5,
-          sortBy: 'checkInTime',
-          sortOrder: 'desc'
-        }),
+        getVisits(user.clubId, { page: 1, pageSize: 5 }),
+        getMemberMetrics(user.clubId).catch(() => null),
       ]);
 
       setStats({
         todayVisits: visitsCount,
         todayRevenue: revenue,
-        activeMembers: 0, // TODO: Add API endpoint for active members count
-        pointsRedeemed: 0, // TODO: Add API endpoint for points redeemed
+        activeMembers: memberMetrics?.activeMembers ?? 0,
+        totalMembers: memberMetrics?.totalMembers ?? 0,
       });
 
       setRecentVisits(visitsData.data);
@@ -129,13 +127,8 @@ export default function AdminDashboard() {
           description="Total check-ins today"
           icon={<Activity className="h-6 w-6" />}
           color="blue"
-          trend={{
-            direction: 'up',
-            value: 12,
-            period: 'yesterday',
-          }}
-          onClick={() => router.push('/admin/analytics/visits')}
-          actionLabel="View details"
+          onClick={() => router.push('/admin/door')}
+          actionLabel="Go to door control"
         />
 
         <StatsCard
@@ -144,13 +137,8 @@ export default function AdminDashboard() {
           description="Total earnings today"
           icon={<DollarSign className="h-6 w-6" />}
           color="green"
-          trend={{
-            direction: 'up',
-            value: 8,
-            period: 'yesterday',
-          }}
-          onClick={() => router.push('/admin/analytics/revenue')}
-          actionLabel="View details"
+          onClick={() => router.push('/admin/bar')}
+          actionLabel="Go to bar & POS"
         />
 
         <StatsCard
@@ -164,13 +152,13 @@ export default function AdminDashboard() {
         />
 
         <StatsCard
-          title="Points Redeemed"
-          value={stats.pointsRedeemed}
-          description="Loyalty points used today"
+          title="Total Members"
+          value={stats.totalMembers}
+          description="All-time registered members"
           icon={<TrendingUp className="h-6 w-6" />}
           color="orange"
-          onClick={() => router.push('/admin/analytics/points')}
-          actionLabel="View analytics"
+          onClick={() => router.push('/admin/members')}
+          actionLabel="Manage members"
         />
       </StatsGrid>
 
@@ -265,9 +253,9 @@ export default function AdminDashboard() {
                   variant="ghost"
                   size="sm"
                   fullWidth
-                  onClick={() => router.push('/admin/analytics/visits')}
+                  onClick={() => router.push('/admin/door')}
                 >
-                  View all visits
+                  Go to door control
                 </Button>
               </div>
             )}
@@ -313,11 +301,10 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    Performance trending up
+                    {stats.activeMembers} active of {stats.totalMembers} members
                   </p>
-                  <p className="text-xs text-gray-500">12% increase vs yesterday</p>
+                  <p className="text-xs text-gray-500">Active in the last 30 days</p>
                 </div>
-                <span className="text-xs text-gray-400">2h ago</span>
               </div>
             </div>
           </CardContent>

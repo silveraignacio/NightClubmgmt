@@ -13,7 +13,7 @@ router.use(protect);
 
 router
   .route('/clubs/:clubId/visits')
-  .get(ensureClubAccess, restrictTo('admin', 'manager'), visitsController.getAllVisits)
+  .get(ensureClubAccess, restrictTo('admin', 'manager', 'doorman'), visitsController.getAllVisits)
   .post(ensureClubAccess, restrictTo('admin', 'manager', 'doorman'), scanLimiter, validate(createVisitSchema), visitsController.createVisit);
 
 router.get('/clubs/:clubId/visits/today/count', ensureClubAccess, visitsController.getTodayVisitsCount);

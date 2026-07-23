@@ -20,18 +20,20 @@ export const generateQRCode = async (qrCodeId: string): Promise<string> => {
   }
 };
 
+// club_members.qr_code_id is generated as `${clubId}-${uuidv4()}` (see
+// membersController.createMember). A UUID is always 36 characters, and since
+// UUIDs themselves contain hyphens, splitting on '-' would only grab the
+// first 8-character segment instead of the full club ID.
+const UUID_LENGTH = 36;
+
 export const validateQRCode = async (qrCodeId: string, clubId: string) => {
-  // Parse QR code ID (format: clubId-memberId or just qrCodeId)
-  const parts = qrCodeId.split('-');
-  let qrClubId: string | undefined;
+  // If the QR code has a club ID embedded (our own generated format), verify it matches.
+  if (qrCodeId.length > UUID_LENGTH && qrCodeId[UUID_LENGTH] === '-') {
+    const qrClubId = qrCodeId.substring(0, UUID_LENGTH);
 
-  if (parts.length >= 2) {
-    qrClubId = parts[0];
-  }
-
-  // If QR code has club ID embedded, verify it matches
-  if (qrClubId && qrClubId !== clubId) {
-    throw new AppError('QR code does not belong to this club', 403);
+    if (qrClubId !== clubId) {
+      throw new AppError('QR code does not belong to this club', 403);
+    }
   }
 
   // Find member with this QR code

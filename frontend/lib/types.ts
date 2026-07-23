@@ -3,13 +3,15 @@
  * Defines the structure of user data and authentication state
  */
 
+// Matches the backend's role vocabulary (see backend/src/middleware/auth.ts
+// restrictTo usage and authService.ts) — club staff roles plus 'member' for
+// customer logins.
 export enum UserRole {
-  SUPER_ADMIN = "super_admin",
-  CLUB_OWNER = "club_owner",
-  CLUB_MANAGER = "club_manager",
-  STAFF = "staff",
-  HOST = "host",
-  SECURITY = "security",
+  ADMIN = "admin",
+  MANAGER = "manager",
+  DOORMAN = "doorman",
+  BARTENDER = "bartender",
+  MEMBER = "member",
 }
 
 /**

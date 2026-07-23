@@ -7,43 +7,26 @@ export type {
 } from './api';
 
 // Auth
-export {
-  login,
-  registerClub,
-  registerMember,
-  logout,
-  verifyToken,
-  getCurrentUser,
-  getAuthToken,
-  isAuthenticated,
-} from './auth';
-export type {
-  LoginCredentials,
-  LoginResponse,
-  RegisterClubData,
-  RegisterClubResponse,
-  RegisterMemberData,
-  RegisterMemberResponse,
-  LogoutResponse,
-  VerifyTokenResponse,
-} from './auth';
+// Auth is handled via the Zustand store (lib/store/authStore.ts) and the
+// useAuth hook (lib/hooks/useAuth.ts) — not exported here to avoid a second,
+// divergent auth API surface.
 
 // Members
 export {
   getMembers,
   getMember,
+  getMemberByQr,
   getMemberQRCode,
   getMemberStats,
   updateMember,
-  searchMembers,
-  getMembersByTier,
-  getMembersByStatus,
-  exportMembers,
+  getMembershipTiers,
 } from './members';
 export type {
   Member,
   MemberStats,
   QRCodeResponse,
+  MembershipTier,
+  UpdateMemberData,
   GetMembersParams,
 } from './members';
 
@@ -51,21 +34,12 @@ export type {
 export {
   createVisit,
   getVisits,
-  getVisit,
   getTodayVisitsCount,
-  getVisitStats,
-  checkOutVisit,
   getMemberVisits,
-  getActiveVisits,
-  getVisitsByDateRange,
-  updateVisit,
-  deleteVisit,
 } from './visits';
 export type {
   Visit,
   CreateVisitData,
-  CheckOutData,
-  VisitStats,
   GetVisitsParams,
 } from './visits';
 
@@ -73,24 +47,13 @@ export type {
 export {
   createTransaction,
   getTransactions,
-  getTransaction,
   getTodayRevenue,
-  getTransactionStats,
-  getRevenueStats,
-  getMemberTransactions,
-  getVisitTransactions,
-  updateTransaction,
-  refundTransaction,
-  getTransactionsByDateRange,
-  getTransactionsByPaymentMethod,
-  exportTransactions,
-  deleteTransaction,
 } from './transactions';
 export type {
   Transaction,
+  TransactionType,
+  PaymentMethod,
   CreateTransactionData,
-  TransactionStats,
-  RevenueStats,
   GetTransactionsParams,
 } from './transactions';
 
@@ -118,3 +81,7 @@ export type {
   GetRewardsParams,
   GetRedeemedRewardsParams,
 } from './rewards';
+
+// Metrics
+export { getMemberMetrics } from './metrics';
+export type { MemberMetricsSummary } from './metrics';
