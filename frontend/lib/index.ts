@@ -82,3 +82,13 @@ export type {
 // Clubs
 export { getClub, updateClub } from './clubs';
 export type { Club, UpdateClubData as UpdateClubSettingsData } from './clubs';
+
+// Employees
+export {
+  getEmployees,
+  getInvitations,
+  inviteEmployee,
+  revokeInvitation,
+  deactivateEmployee,
+} from './employees';
+export type { Employee, Invitation as EmployeeInvitation, EmployeeRole } from './employees';

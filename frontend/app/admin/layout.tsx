@@ -15,6 +15,7 @@ import {
   Receipt,
   Settings,
   Calendar,
+  UserCog,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -123,6 +124,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           requiredRoles: ['admin', 'manager'],
         }
       );
+    }
+
+    // Employee invite/management is admin-only on the backend
+    // (restrictTo('admin') — see .claude/rules/rbac.md), so only show it to admins.
+    if (role === 'admin') {
+      items.push({
+        label: 'Employees',
+        href: '/admin/employees',
+        icon: <UserCog className="h-5 w-5" />,
+        requiredRoles: ['admin'],
+      });
     }
 
     // Doorman role - limited to door control
