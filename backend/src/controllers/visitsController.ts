@@ -27,8 +27,8 @@ export const createVisit = catchAsync(async (req: AuthRequest, res: Response) =>
 
   // Update member stats
   await query(
-    'UPDATE club_members SET total_visits = total_visits + 1, last_visit = CURRENT_TIMESTAMP WHERE id = $1',
-    [member.id]
+    'UPDATE club_members SET total_visits = total_visits + 1, last_visit = CURRENT_TIMESTAMP WHERE id = $1 AND club_id = $2',
+    [member.id, clubId]
   );
 
   // Check for entry bonus points (if promotion active)
@@ -63,7 +63,7 @@ export const createVisit = catchAsync(async (req: AuthRequest, res: Response) =>
       createdByUserId: userId,
     });
 
-    await query('UPDATE visits SET points_earned = $1 WHERE id = $2', [pointsEarned, visit.id]);
+    await query('UPDATE visits SET points_earned = $1 WHERE id = $2 AND club_id = $3', [pointsEarned, visit.id, clubId]);
   }
 
   // Send notification to member
