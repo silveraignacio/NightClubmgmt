@@ -82,16 +82,22 @@ jobs:
       - name: Detect UPDATE/DELETE on club_members without club_id
         run: |
           set -e
-          # Search for known dangerous patterns; fail if any match misses club_id
-          if grep -rn "UPDATE club_members SET points_balance" backend/src/services/ | grep -v "club_id"; then
+          # Search for known dangerous patterns; fail if any match misses club_id.
+          # Scans controllers/ too: this codebase's query logic lives in either
+          # layer depending on the endpoint, not just services/.
+          if grep -rn "UPDATE club_members SET points_balance" backend/src/controllers/ backend/src/services/ | grep -v "club_id"; then
             echo "::error::Found UPDATE on club_members.points_balance without club_id filter"
             exit 1
           fi
-          if grep -rn "UPDATE club_members SET total_visits" backend/src/services/ | grep -v "club_id"; then
+          if grep -rn "UPDATE club_members SET total_visits" backend/src/controllers/ backend/src/services/ | grep -v "club_id"; then
             echo "::error::Found UPDATE on club_members.total_visits without club_id filter"
             exit 1
           fi
-          if grep -rn "UPDATE transactions SET status = 'refunded'" backend/src/services/ | grep -v "club_id"; then
+          if grep -rn "UPDATE club_members SET total_spent" backend/src/controllers/ backend/src/services/ | grep -v "club_id"; then
+            echo "::error::Found UPDATE on club_members.total_spent without club_id filter"
+            exit 1
+          fi
+          if grep -rn "UPDATE transactions SET status = 'refunded'" backend/src/controllers/ backend/src/services/ | grep -v "club_id"; then
             echo "::error::Found refund UPDATE without club_id filter"
             exit 1
           fi
