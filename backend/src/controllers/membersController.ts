@@ -240,9 +240,14 @@ export const deleteMember = catchAsync(async (req: AuthRequest, res: Response) =
   res.status(204).send();
 });
 
-// Escape a value for a CSV cell: wrap in quotes and double up any internal quotes.
+// Escape a value for a CSV cell: neutralize formula injection (a member name
+// like `=HYPERLINK(...)` would execute when opened in Excel/Sheets), then
+// wrap in quotes and double up any internal quotes.
 const csvCell = (value: unknown): string => {
-  const str = value === null || value === undefined ? '' : String(value);
+  let str = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@]/.test(str)) {
+    str = `'${str}`;
+  }
   return `"${str.replace(/"/g, '""')}"`;
 };
 

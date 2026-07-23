@@ -8,7 +8,7 @@ import {
   type Member,
   type MemberStats,
 } from '@/lib';
-import apiClient from '@/lib/api';
+import apiClient, { handleApiError } from '@/lib/api';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
   Card,
@@ -188,8 +188,11 @@ export default function ProfilePage() {
       });
       setIsChangingPassword(false);
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to change password');
+    } catch (err) {
+      // handleApiError surfaces the backend's actual message (e.g. "Current
+      // password is incorrect") — axios's own err.message is just a generic
+      // "Request failed with status code 400".
+      setError(handleApiError(err).message);
       console.error('Error changing password:', err);
     } finally {
       setIsSaving(false);
