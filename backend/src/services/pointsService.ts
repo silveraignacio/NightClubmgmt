@@ -34,8 +34,8 @@ export const updateMemberPoints = async (data: PointsUpdate) => {
 
   // Update member points
   await query(
-    'UPDATE club_members SET points_balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-    [newBalance, memberId]
+    'UPDATE club_members SET points_balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND club_id = $3',
+    [newBalance, memberId, clubId]
   );
 
   // Log points history
