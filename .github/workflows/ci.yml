@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel duplicate runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (typecheck + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test -- --ci --reporters=default
+
+      - name: Build
+        run: npm run build
+
+  frontend:
+    name: Frontend (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+          NEXT_PUBLIC_ROOT_DOMAIN: nightapp.com
+        run: npm run build
+
+  # Optional smoke check for tenant-safety patterns (catches obvious regressions
+  # even before tests run). Pure grep, no DB needed.
+  tenant-safety-grep:
+    name: Static tenant-safety check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect UPDATE/DELETE on club_members without club_id
+        run: |
+          set -e
+          # Search for known dangerous patterns; fail if any match misses club_id
+          if grep -rn "UPDATE club_members SET points_balance" backend/src/services/ | grep -v "club_id"; then
+            echo "::error::Found UPDATE on club_members.points_balance without club_id filter"
+            exit 1
+          fi
+          if grep -rn "UPDATE club_members SET total_visits" backend/src/services/ | grep -v "club_id"; then
+            echo "::error::Found UPDATE on club_members.total_visits without club_id filter"
+            exit 1
+          fi
+          if grep -rn "UPDATE transactions SET status = 'refunded'" backend/src/services/ | grep -v "club_id"; then
+            echo "::error::Found refund UPDATE without club_id filter"
+            exit 1
+          fi
+          echo "✅ No known dangerous patterns detected"
