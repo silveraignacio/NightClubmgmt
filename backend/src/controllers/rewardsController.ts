@@ -127,6 +127,23 @@ export const redeemReward = catchAsync(async (req: AuthRequest, res: Response) =
       [rewardId, memberId, pointsCost]
     );
 
+    // Ledger entry: the UPDATE above already moved points_balance, but every
+    // change must also be traceable in points_history or the balance can't be
+    // reconciled against the ledger (see .claude/rules/loyalty.md).
+    await client.query(
+      `INSERT INTO points_history (member_id, club_id, points_change, reason, reference_id, reference_type, balance_after, created_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, 'reward_redemption', $6, $7)`,
+      [
+        memberId,
+        clubId,
+        -pointsCost,
+        `Reward redeemed: ${reward.reward_name}`,
+        redemptionResult.rows[0].id,
+        newBalance,
+        memberId,
+      ]
+    );
+
     await client.query('COMMIT');
 
     const redemption = redemptionResult.rows[0];
