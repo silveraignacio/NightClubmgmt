@@ -262,9 +262,12 @@ export const login = async (data: LoginData) => {
     };
   }
 
-  // Try to find member in club_members
+  // Try to find member in club_members. Excludes deleted/anonymized members —
+  // their password_hash is NULLed out by gdprService.deleteAndAnonymize, so
+  // comparePasswords would throw rather than just fail cleanly if we didn't.
   userResult = await query(
-    'SELECT id, email, password_hash, full_name, club_id, qr_code_id, membership_type, points_balance FROM club_members WHERE email = $1',
+    `SELECT id, email, password_hash, full_name, club_id, qr_code_id, membership_type, points_balance
+     FROM club_members WHERE email = $1 AND deleted_at IS NULL`,
     [email]
   );
 

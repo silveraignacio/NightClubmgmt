@@ -43,6 +43,10 @@ export const acceptInvitationSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
 });
 
+export const deleteAccountSchema = z.object({
+  reason: z.string().max(500).optional(),
+});
+
 // Member validation schemas
 export const memberRegistrationSchema = z.object({
   email: z.string().email('Invalid email address').optional(),

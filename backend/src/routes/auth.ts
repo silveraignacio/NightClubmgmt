@@ -10,6 +10,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   acceptInvitationSchema,
+  deleteAccountSchema,
 } from '../utils/validators';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
 import { protect } from '../middleware/auth';
@@ -44,6 +45,16 @@ router.post(
   authLimiter,
   validate(acceptInvitationSchema),
   employeesController.acceptInvitation
+);
+
+// GDPR (member-authenticated, self-service only — no memberId is ever taken
+// from params/body, always req.user.id).
+router.get('/export-my-data', protect, authController.exportMyData);
+router.post(
+  '/delete-my-account',
+  protect,
+  validate(deleteAccountSchema),
+  authController.deleteMyAccount
 );
 
 export default router;

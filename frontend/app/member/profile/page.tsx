@@ -69,6 +69,8 @@ export default function ProfilePage() {
   // Notification settings (persisted via updateMember's notificationsEnabled/smsEnabled)
   const [notifications, setNotifications] = useState({ email: true, sms: false });
   const [savingNotification, setSavingNotification] = useState<'email' | 'sms' | null>(null);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Fetch data on mount
   useEffect(() => {
@@ -219,6 +221,47 @@ export default function ProfilePage() {
       setError('Failed to update notification preference');
     } finally {
       setSavingNotification(null);
+    }
+  };
+
+  const handleExportData = async () => {
+    setError(null);
+    try {
+      setIsExportingData(true);
+      const response = await apiClient.get('/auth/export-my-data');
+      const blob = new Blob([JSON.stringify(response.data.data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `my-data-${user?.id || 'export'}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(handleApiError(err).message);
+    } finally {
+      setIsExportingData(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (
+      !confirm(
+        'Delete your account? This permanently removes your personal info (name, email, phone, photo). This cannot be undone.'
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    try {
+      setIsDeletingAccount(true);
+      await apiClient.post('/auth/delete-my-account', {});
+      await logout();
+      window.location.href = '/login';
+    } catch (err) {
+      setError(handleApiError(err).message);
+      setIsDeletingAccount(false);
     }
   };
 
@@ -703,6 +746,53 @@ export default function ProfilePage() {
               <p className="text-gray-400">No transactions yet</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Privacy & Data (GDPR) */}
+      <Card className="bg-gray-800/50 border-purple-500/30">
+        <CardHeader>
+          <CardTitle className="text-white">Privacy & Data</CardTitle>
+          <CardDescription className="text-gray-400">
+            Export a copy of your data, or permanently delete your personal information.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-white">Export my data</p>
+              <p className="text-xs text-gray-400">
+                Download a JSON file with your profile, visits, transactions, points history, and
+                redeemed rewards.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleExportData}
+              isLoading={isExportingData}
+              loadingText="Exporting..."
+            >
+              Export
+            </Button>
+          </div>
+
+          <div className="border-t border-red-500/20 pt-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-red-400">Delete my account</p>
+              <p className="text-xs text-gray-400">
+                Permanently removes your name, email, phone, and photo. Cannot be undone.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+              onClick={handleDeleteAccount}
+              isLoading={isDeletingAccount}
+              loadingText="Deleting..."
+            >
+              Delete account
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

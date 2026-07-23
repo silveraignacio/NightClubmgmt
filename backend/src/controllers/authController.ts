@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import * as authService from '../services/authService';
 import { passwordResetService } from '../services/passwordResetService';
-import { catchAsync } from '../utils/errorHandler';
+import { gdprService } from '../services/gdprService';
+import { catchAsync, AppError } from '../utils/errorHandler';
 import { auditService, AuditActionType } from '../services/auditService';
 import { AuthRequest } from '../middleware/auth';
 import type { Request } from 'express';
@@ -128,5 +129,45 @@ export const resetPassword = catchAsync(async (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
     message: 'Password reset successful',
+  });
+});
+
+// GDPR: export the caller's own data. Members only — there's no equivalent
+// concept of "my data" for a club_users row scoped this way today.
+export const exportMyData = catchAsync(async (req: AuthRequest, res: Response) => {
+  if (req.user!.role !== 'member') {
+    throw new AppError('Only members can export their data via this endpoint', 403);
+  }
+
+  const data = await gdprService.exportMemberData(req.user!.id, req.clubId!);
+
+  await auditService.logAction(AuditActionType.MEMBER_DATA_EXPORTED, req.user!.id, req.clubId, {}, req);
+
+  res.setHeader('Content-Disposition', `attachment; filename="my-data-${req.user!.id}.json"`);
+  res.status(200).json({ status: 'success', data });
+});
+
+// GDPR: self-delete + anonymize. Members only (see gdprService.deleteAndAnonymize
+// for why this scrubs PII in place rather than hard-deleting the row).
+export const deleteMyAccount = catchAsync(async (req: AuthRequest, res: Response) => {
+  if (req.user!.role !== 'member') {
+    throw new AppError('Only members can delete their account via this endpoint', 403);
+  }
+
+  const { reason } = req.body || {};
+
+  await gdprService.deleteAndAnonymize(req.user!.id, req.clubId!);
+
+  await auditService.logAction(
+    AuditActionType.MEMBER_DELETED,
+    req.user!.id,
+    req.clubId,
+    { reason: reason || null, self: true },
+    req
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Account deleted and personal data anonymized',
   });
 });
