@@ -1,5 +1,6 @@
 import express from 'express';
 import * as authController from '../controllers/authController';
+import * as employeesController from '../controllers/employeesController';
 import { validate } from '../middleware/validation';
 import {
   registerSchema,
@@ -8,6 +9,7 @@ import {
   verifyEmailSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  acceptInvitationSchema,
 } from '../utils/validators';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
 import { protect } from '../middleware/auth';
@@ -35,6 +37,13 @@ router.post(
   passwordResetLimiter,
   validate(resetPasswordSchema),
   authController.resetPassword
+);
+
+router.post(
+  '/accept-invitation',
+  authLimiter,
+  validate(acceptInvitationSchema),
+  employeesController.acceptInvitation
 );
 
 export default router;

@@ -32,6 +32,17 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+export const inviteEmployeeSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['admin', 'manager', 'bartender', 'doorman', 'security', 'staff']),
+});
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+});
+
 // Member validation schemas
 export const memberRegistrationSchema = z.object({
   email: z.string().email('Invalid email address').optional(),

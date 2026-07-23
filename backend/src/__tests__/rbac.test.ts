@@ -84,6 +84,13 @@ const endpoints: EndpointSpec[] = [
   // ── Clubs ────────────────────────────────────────────────────────────────
   { name: 'GET /clubs/:id', allowed: ['admin', 'manager'] },
   { name: 'PATCH /clubs/:id (settings)', allowed: ['admin'] },
+
+  // ── Employees ────────────────────────────────────────────────────────────
+  { name: 'GET /employees', allowed: ['admin'] },
+  { name: 'POST /employees/invite', allowed: ['admin'] },
+  { name: 'GET /employees/invitations', allowed: ['admin'] },
+  { name: 'DELETE /employees/invitations/:id', allowed: ['admin'] },
+  { name: 'DELETE /employees/:userId', allowed: ['admin'] },
 ];
 
 describe('RBAC: restrictTo middleware', () => {

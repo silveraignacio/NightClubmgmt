@@ -67,6 +67,24 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
   );
 };
 
+export const sendEmployeeInvitationEmail = async (
+  to: string,
+  token: string,
+  clubName: string,
+  role: string
+) => {
+  const acceptUrl = `${APP_URL}/accept-invite?token=${encodeURIComponent(token)}`;
+  return send(
+    to,
+    `Te invitaron a unirte a ${escapeHtml(clubName)}`,
+    `<p>Te invitaron a unirte a <strong>${escapeHtml(clubName)}</strong> como ${escapeHtml(role)}.</p>
+     <p>Aceptá la invitación y creá tu cuenta:</p>
+     <p><a href="${acceptUrl}">${acceptUrl}</a></p>
+     <p>Este enlace vence en 48 horas.</p>`,
+    { emailType: 'employee_invitation' }
+  );
+};
+
 // Minimal HTML-escaping for the one piece of user-controlled data (full name)
 // interpolated into an email body.
 function escapeHtml(value: string): string {
