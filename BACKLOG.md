@@ -128,6 +128,25 @@ neutralizaba fórmulas (`=HYPERLINK(...)` en un nombre ejecutaría al abrir en E
 
 ## P1 — Cerrar el SaaS (monetización y gestión)
 
+- [ ] **[ALTA PRIORIDAD] Emails transaccionales con Resend: verificación de email +
+      reset de contraseña.** Hoy no existe ninguno de los dos flujos — un club/socio que
+      se registra con un email inválido o que olvida la contraseña no tiene salida.
+      Proveedor: **Resend** (decisión tomada). Alcance sugerido:
+      - `RESEND_API_KEY` en `.env`/`.env.example`, cliente Resend en un
+        `emailService.ts` nuevo (o adaptar `notificationService.ts`, hoy sin envío real)
+      - Verificación de email: token firmado o UUID con expiración, columna
+        `email_verified_at` (o similar) en `club_users`/`club_members`, endpoint
+        `POST /auth/verify-email` + `POST /auth/resend-verification`, email disparado
+        al registrar (club owner y member)
+      - Reset de contraseña: `POST /auth/forgot-password` (rate-limited,
+        `passwordResetLimiter` ya contemplado en `.claude/rules/security.md`) +
+        `POST /auth/reset-password`, token de un solo uso con expiración corta
+      - Ya hay una implementación de referencia (email verification + forgot/reset
+        password, incluyendo `passwordResetService.ts`) en la branch
+        `backup/local-work-pre-origin-main` — evaluar adaptarla en vez de escribir
+        de cero, pero cambiando el proveedor de email a Resend
+      - Auditar ambos flujos (`REGISTRATION`/login-related events) por
+        `.claude/rules/security.md` — audit log obligatorio
 - [ ] Conectar Stripe (billing de clubes): montar rutas/webhook para `stripeService.ts`
       (ya escrito, hoy huérfano); enforcement de `features`/`max_members` por plan — **no
       prioritario ahora mismo** (decisión explícita del owner del producto)
