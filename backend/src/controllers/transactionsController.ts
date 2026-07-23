@@ -105,8 +105,8 @@ export const createTransaction = catchAsync(async (req: AuthRequest, res: Respon
   });
 
   await query(
-    'UPDATE club_members SET total_spent = total_spent + $1 WHERE id = $2',
-    [finalAmount, member.id]
+    'UPDATE club_members SET total_spent = total_spent + $1 WHERE id = $2 AND club_id = $3',
+    [finalAmount, member.id, clubId]
   );
 
   // Send notification
