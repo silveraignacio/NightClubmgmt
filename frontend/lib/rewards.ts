@@ -1,18 +1,30 @@
-import apiClient, { ApiResponse, PaginatedResponse, handleApiError } from './api';
+import apiClient, { ApiResponse, handleApiError } from './api';
 
 /**
  * Reward Types
+ *
+ * These map 1:1 to the backend rewards feature:
+ *   GET  /clubs/:clubId/rewards                       -> catalog
+ *   POST /clubs/:clubId/rewards/:rewardId/redeem      -> redeem for the caller
+ *   GET  /clubs/:clubId/members/me/redeemed-rewards   -> caller's history
+ * (see backend/src/controllers/rewardsController.ts + database/schema.sql).
  */
+export type RewardType = 'discount' | 'free_item' | 'free_entry' | 'merchandise';
+export type RedemptionStatus = 'active' | 'used' | 'expired';
+
 export interface Reward {
   id: string;
   clubId: string;
   name: string;
   description: string;
   pointsRequired: number;
-  category: 'drinks' | 'food' | 'vip' | 'experiences' | 'merchandise' | 'discounts';
+  rewardType: RewardType;
   value: number;
-  quantity?: number;
-  expiresInDays?: number;
+  imageUrl?: string;
+  quantityAvailable?: number;
+  quantityRedeemed: number;
+  validFrom?: string;
+  validUntil?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -20,314 +32,151 @@ export interface Reward {
 
 export interface RedeemedReward {
   id: string;
+  rewardId: string;
   memberId: string;
-  rewardId: string;
-  reward: Reward;
-  redeemedAt: string;
-  expiresAt: string;
-  code?: string;
-  used: boolean;
-  usedAt?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateRewardData {
-  name: string;
-  description: string;
-  pointsRequired: number;
-  category: 'drinks' | 'food' | 'vip' | 'experiences' | 'merchandise' | 'discounts';
+  rewardName: string;
+  description?: string;
+  rewardType: RewardType;
   value: number;
-  quantity?: number;
-  expiresInDays?: number;
-}
-
-export interface RedeemRewardData {
-  rewardId: string;
+  imageUrl?: string;
+  pointsSpent: number;
+  status: RedemptionStatus;
+  redeemedAt: string;
+  usedAt?: string;
+  validUntil?: string;
   notes?: string;
 }
 
-export interface GetRewardsParams {
-  page?: number;
-  pageSize?: number;
-  category?: string;
-  isActive?: boolean;
-  sortBy?: 'name' | 'pointsRequired' | 'value' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
+export interface RedeemResult {
+  redemption: RedeemedReward;
+  pointsBalance: number;
 }
 
-export interface GetRedeemedRewardsParams {
-  page?: number;
-  pageSize?: number;
-  memberId?: string;
-  used?: boolean;
-  sortBy?: 'redeemedAt' | 'expiresAt';
-  sortOrder?: 'asc' | 'desc';
+// Raw backend rows (snake_case) from rewardsController.
+interface RawReward {
+  id: string;
+  club_id: string;
+  reward_name: string;
+  description: string | null;
+  points_required: number;
+  reward_type: RewardType;
+  value: string | number | null;
+  image_url: string | null;
+  quantity_available: number | null;
+  quantity_redeemed: number;
+  valid_from: string | null;
+  valid_until: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawRedeemedReward {
+  id: string;
+  reward_id: string;
+  member_id: string;
+  reward_name: string;
+  description?: string | null;
+  reward_type: RewardType;
+  value: string | number | null;
+  image_url?: string | null;
+  points_spent: number;
+  status: RedemptionStatus;
+  redeemed_at: string;
+  used_at: string | null;
+  valid_until?: string | null;
+  notes?: string | null;
+}
+
+function mapReward(raw: RawReward): Reward {
+  return {
+    id: raw.id,
+    clubId: raw.club_id,
+    name: raw.reward_name,
+    description: raw.description || '',
+    pointsRequired: raw.points_required,
+    rewardType: raw.reward_type,
+    value: Number(raw.value) || 0,
+    imageUrl: raw.image_url || undefined,
+    quantityAvailable: raw.quantity_available ?? undefined,
+    quantityRedeemed: raw.quantity_redeemed || 0,
+    validFrom: raw.valid_from || undefined,
+    validUntil: raw.valid_until || undefined,
+    isActive: raw.is_active,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+  };
+}
+
+function mapRedeemedReward(raw: RawRedeemedReward): RedeemedReward {
+  return {
+    id: raw.id,
+    rewardId: raw.reward_id,
+    memberId: raw.member_id,
+    rewardName: raw.reward_name,
+    description: raw.description || undefined,
+    rewardType: raw.reward_type,
+    value: Number(raw.value) || 0,
+    imageUrl: raw.image_url || undefined,
+    pointsSpent: raw.points_spent,
+    status: raw.status,
+    redeemedAt: raw.redeemed_at,
+    usedAt: raw.used_at || undefined,
+    validUntil: raw.valid_until || undefined,
+    notes: raw.notes || undefined,
+  };
 }
 
 /**
- * Get all available rewards for a club
+ * Get the active reward catalog for a club.
  */
-export const getRewards = async (
-  clubId: string,
-  params?: GetRewardsParams
-): Promise<PaginatedResponse<Reward>> => {
+export const getRewards = async (clubId: string): Promise<Reward[]> => {
   try {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Reward>>>(
-      `/clubs/${clubId}/rewards`,
-      { params }
+    const response = await apiClient.get<ApiResponse<{ rewards: RawReward[] }>>(
+      `/clubs/${clubId}/rewards`
     );
-
-    return response.data.data || {
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    };
+    return (response.data.data?.rewards || []).map(mapReward);
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
 /**
- * Get a specific reward by ID
- */
-export const getReward = async (
-  clubId: string,
-  rewardId: string
-): Promise<Reward> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Reward>>(
-      `/clubs/${clubId}/rewards/${rewardId}`
-    );
-
-    return response.data.data || ({} as Reward);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Create a new reward (admin only)
- */
-export const createReward = async (
-  clubId: string,
-  data: CreateRewardData
-): Promise<Reward> => {
-  try {
-    const response = await apiClient.post<ApiResponse<Reward>>(
-      `/clubs/${clubId}/rewards`,
-      data
-    );
-
-    return response.data.data || ({} as Reward);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Update a reward (admin only)
- */
-export const updateReward = async (
-  clubId: string,
-  rewardId: string,
-  data: Partial<CreateRewardData>
-): Promise<Reward> => {
-  try {
-    const response = await apiClient.put<ApiResponse<Reward>>(
-      `/clubs/${clubId}/rewards/${rewardId}`,
-      data
-    );
-
-    return response.data.data || ({} as Reward);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Delete a reward (admin only)
- */
-export const deleteReward = async (
-  clubId: string,
-  rewardId: string
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await apiClient.delete<
-      ApiResponse<{ success: boolean; message: string }>
-    >(`/clubs/${clubId}/rewards/${rewardId}`);
-
-    return response.data.data || { success: true, message: 'Reward deleted' };
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get redeemed rewards for a member
- */
-export const getMemberRedeemedRewards = async (
-  clubId: string,
-  memberId: string,
-  params?: Omit<GetRedeemedRewardsParams, 'memberId'>
-): Promise<PaginatedResponse<RedeemedReward>> => {
-  try {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<RedeemedReward>>>(
-      `/clubs/${clubId}/members/${memberId}/redeemed-rewards`,
-      { params }
-    );
-
-    return response.data.data || {
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    };
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get all redeemed rewards for a club
- */
-export const getRedeemedRewards = async (
-  clubId: string,
-  params?: GetRedeemedRewardsParams
-): Promise<PaginatedResponse<RedeemedReward>> => {
-  try {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<RedeemedReward>>>(
-      `/clubs/${clubId}/redeemed-rewards`,
-      { params }
-    );
-
-    return response.data.data || {
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    };
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Redeem a reward for a member
+ * Redeem a reward for the currently authenticated member.
+ * The backend derives the member from the auth token — no memberId is sent.
  */
 export const redeemReward = async (
   clubId: string,
-  memberId: string,
-  data: RedeemRewardData
-): Promise<RedeemedReward> => {
+  rewardId: string
+): Promise<RedeemResult> => {
   try {
-    const response = await apiClient.post<ApiResponse<RedeemedReward>>(
-      `/clubs/${clubId}/members/${memberId}/redeem-reward`,
-      data
-    );
+    const response = await apiClient.post<
+      ApiResponse<{ redemption: RawRedeemedReward; pointsBalance: number }>
+    >(`/clubs/${clubId}/rewards/${rewardId}/redeem`);
 
-    return response.data.data || ({} as RedeemedReward);
+    const data = response.data.data;
+    if (!data) throw new Error('Redemption failed');
+
+    return {
+      redemption: mapRedeemedReward(data.redemption),
+      pointsBalance: data.pointsBalance,
+    };
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
 /**
- * Mark a redeemed reward as used
+ * Get the authenticated member's own redemption history.
  */
-export const markRewardAsUsed = async (
-  clubId: string,
-  redeemedRewardId: string,
-  notes?: string
-): Promise<RedeemedReward> => {
-  try {
-    const response = await apiClient.patch<ApiResponse<RedeemedReward>>(
-      `/clubs/${clubId}/redeemed-rewards/${redeemedRewardId}/mark-used`,
-      { notes }
-    );
-
-    return response.data.data || ({} as RedeemedReward);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get reward categories
- */
-export const getRewardCategories = async (
+export const getMyRedeemedRewards = async (
   clubId: string
-): Promise<string[]> => {
+): Promise<RedeemedReward[]> => {
   try {
-    const response = await apiClient.get<ApiResponse<string[]>>(
-      `/clubs/${clubId}/rewards/categories`
-    );
-
-    return response.data.data || [];
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get rewards by category
- */
-export const getRewardsByCategory = async (
-  clubId: string,
-  category: string
-): Promise<Reward[]> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Reward[]>>(
-      `/clubs/${clubId}/rewards/category/${category}`
-    );
-
-    return response.data.data || [];
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Search rewards
- */
-export const searchRewards = async (
-  clubId: string,
-  query: string
-): Promise<Reward[]> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Reward[]>>(
-      `/clubs/${clubId}/rewards/search`,
-      { params: { q: query } }
-    );
-
-    return response.data.data || [];
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Export redeemed rewards to CSV
- */
-export const exportRedeemedRewards = async (
-  clubId: string,
-  params?: GetRedeemedRewardsParams
-): Promise<Blob> => {
-  try {
-    const response = await apiClient.get(
-      `/clubs/${clubId}/redeemed-rewards/export`,
-      {
-        params,
-        responseType: 'blob',
-      }
-    );
-
-    return response.data;
+    const response = await apiClient.get<
+      ApiResponse<{ redeemedRewards: RawRedeemedReward[] }>
+    >(`/clubs/${clubId}/members/me/redeemed-rewards`);
+    return (response.data.data?.redeemedRewards || []).map(mapRedeemedReward);
   } catch (error) {
     throw handleApiError(error);
   }

@@ -139,38 +139,36 @@ export const restrictTo = (...roles: string[]) => {
   };
 };
 
-export const optionalAuth = async (
-  req: AuthRequest,
-  _res: Response,
-  next: NextFunction
-) => {
-  try {
-    let token: string | undefined;
+/**
+ * Like restrictTo, but also allows a `member` acting on their own record
+ * (req.params.memberId === req.user.id) — e.g. viewing/editing your own
+ * profile, or fetching your own QR code/stats. Use for routes with a
+ * `:memberId` param that should be self-service for members but
+ * staff-accessible more broadly.
+ */
+export const restrictToSelfOrRoles = (...roles: string[]) => {
+  return async (req: AuthRequest, _res: Response, next: NextFunction) => {
+    const isSelf = !!req.user && req.user.id === req.params.memberId;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    if (req.user && (isSelf || roles.includes(req.user.role))) {
+      return next();
     }
 
-    if (token) {
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        return next();
-      }
-
-      const decoded = jwt.verify(token, jwtSecret) as {
-        id: string;
-        email: string;
-        role: string;
-        clubId?: string;
-      };
-
-      req.user = decoded;
-      req.clubId = decoded.clubId;
-    }
-
-    next();
-  } catch (error) {
-    // If token is invalid, just continue without user
-    next();
-  }
+    await auditService.logAction(
+      AuditActionType.UNAUTHORIZED_ACCESS,
+      req.user?.id,
+      req.clubId,
+      {
+        reason: 'Insufficient permissions (not self, not an allowed role)',
+        requiredRoles: roles,
+        userRole: req.user?.role,
+        path: req.originalUrl || req.url,
+      },
+      req
+    );
+    return next(
+      new AppError('You do not have permission to perform this action', 403)
+    );
+  };
 };
+

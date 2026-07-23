@@ -162,8 +162,40 @@ export const getAllTransactions = catchAsync(async (req: AuthRequest, res: Respo
   const clubId = req.clubId!;
   const { startDate, endDate, memberId, status, limit = '50', offset = '0' } = req.query;
 
-  let queryText = `
-    SELECT
+  // Build the WHERE clause once and reuse it for the page, the total count,
+  // and the total amount, so all three agree with the filters actually applied.
+  let whereClause = 'WHERE t.club_id = $1';
+  const params: any[] = [clubId];
+  let paramIndex = 2;
+
+  if (startDate) {
+    whereClause += ` AND t.transaction_date >= $${paramIndex}`;
+    params.push(startDate);
+    paramIndex++;
+  }
+
+  if (endDate) {
+    whereClause += ` AND t.transaction_date <= $${paramIndex}`;
+    params.push(endDate);
+    paramIndex++;
+  }
+
+  if (memberId) {
+    whereClause += ` AND t.member_id = $${paramIndex}`;
+    params.push(memberId);
+    paramIndex++;
+  }
+
+  if (status) {
+    whereClause += ` AND t.status = $${paramIndex}`;
+    params.push(status);
+    paramIndex++;
+  }
+
+  const listParams = [...params, parseInt(limit as string), parseInt(offset as string)];
+
+  const result = await query(
+    `SELECT
       t.*,
       cm.full_name as member_name,
       cm.membership_type,
@@ -171,51 +203,25 @@ export const getAllTransactions = catchAsync(async (req: AuthRequest, res: Respo
     FROM transactions t
     LEFT JOIN club_members cm ON t.member_id = cm.id
     LEFT JOIN club_users cu ON t.processed_by_user_id = cu.id
-    WHERE t.club_id = $1
-  `;
-
-  const params: any[] = [clubId];
-  let paramIndex = 2;
-
-  if (startDate) {
-    queryText += ` AND t.transaction_date >= $${paramIndex}`;
-    params.push(startDate);
-    paramIndex++;
-  }
-
-  if (endDate) {
-    queryText += ` AND t.transaction_date <= $${paramIndex}`;
-    params.push(endDate);
-    paramIndex++;
-  }
-
-  if (memberId) {
-    queryText += ` AND t.member_id = $${paramIndex}`;
-    params.push(memberId);
-    paramIndex++;
-  }
-
-  if (status) {
-    queryText += ` AND t.status = $${paramIndex}`;
-    params.push(status);
-    paramIndex++;
-  }
-
-  queryText += ` ORDER BY t.transaction_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-  params.push(parseInt(limit as string), parseInt(offset as string));
-
-  const result = await query(queryText, params);
-
-  // Get total amount
-  const sumResult = await query(
-    'SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE club_id = $1 AND status = $2',
-    [clubId, 'completed']
+    ${whereClause}
+    ORDER BY t.transaction_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+    listParams
   );
+
+  // totalAmount represents realized revenue: scoped to completed transactions
+  // unless the caller already filtered by a specific status themselves.
+  const sumWhereClause = status ? whereClause : `${whereClause} AND t.status = 'completed'`;
+
+  const [countResult, sumResult] = await Promise.all([
+    query(`SELECT COUNT(*) as count FROM transactions t ${whereClause}`, params),
+    query(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions t ${sumWhereClause}`, params),
+  ]);
 
   res.status(200).json({
     status: 'success',
     data: {
       transactions: result.rows,
+      total: parseInt(countResult.rows[0].count),
       totalAmount: parseFloat(sumResult.rows[0].total),
       limit: parseInt(limit as string),
       offset: parseInt(offset as string),

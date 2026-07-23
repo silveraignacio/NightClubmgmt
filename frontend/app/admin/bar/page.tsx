@@ -156,18 +156,12 @@ export default function BarPage() {
     );
   };
 
+  // Discount/points preview — sourced from the member's own tier (set by an
+  // admin via membership_tiers), the same values the backend applies
+  // authoritatively when the transaction is actually created.
   const getDiscount = () => {
     if (!selectedMember) return 0;
-
-    // Tier-based discounts
-    const discounts = {
-      BRONZE: 0.05, // 5%
-      SILVER: 0.10, // 10%
-      GOLD: 0.15,   // 15%
-      PLATINUM: 0.20, // 20%
-    };
-
-    return discounts[selectedMember.tier as keyof typeof discounts] || 0;
+    return selectedMember.discountPercentage / 100;
   };
 
   const calculateDiscountAmount = () => {
@@ -180,8 +174,9 @@ export default function BarPage() {
 
   const calculatePointsEarned = () => {
     if (!selectedMember) return 0;
-    // 1 point per dollar spent
-    return Math.floor(calculateTotal());
+    // Mirrors backend/src/services/pointsService.ts calculatePointsEarned:
+    // floor(floor(amount) * pointsMultiplier).
+    return Math.floor(Math.floor(calculateTotal()) * selectedMember.pointsMultiplier);
   };
 
   const handleProcessOrder = async () => {
@@ -198,12 +193,20 @@ export default function BarPage() {
       // discount itself and computes the final charged amount server-side
       // (see transactionsController.createTransaction) — sending an
       // already-discounted total here would double-apply the discount.
-      const hasFood = orderItems.every((item) => item.menuItem.category === 'Food');
+      //
+      // The backend only has one transactionType per transaction (no "mixed"
+      // option), so for a basket with both drinks and food we pick whichever
+      // category the order is actually weighted toward by value, rather than
+      // requiring 100% of items to be food to count as a food sale.
+      const foodSubtotal = orderItems
+        .filter((item) => item.menuItem.category === 'Food')
+        .reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+      const isMostlyFood = foodSubtotal > calculateSubtotal() / 2;
 
       await createTransaction(user.clubId, {
         qrCodeId: memberQrInput.trim(),
         amount: calculateSubtotal(),
-        transactionType: hasFood ? 'food_sale' : 'drink_sale',
+        transactionType: isMostlyFood ? 'food_sale' : 'drink_sale',
         paymentMethod,
         description: itemsDescription,
       });

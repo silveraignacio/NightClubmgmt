@@ -1,6 +1,8 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import * as authService from '../services/authService';
 import { catchAsync } from '../utils/errorHandler';
+import { AuthRequest } from '../middleware/auth';
+import type { Request } from 'express';
 
 export const registerClubOwner = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerClubOwner(req.body);
@@ -42,15 +44,29 @@ export const logout = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
-export const verifyToken = catchAsync(async (req: Request, res: Response) => {
+export const verifyToken = catchAsync(async (req: AuthRequest, res: Response) => {
   // User is already authenticated via middleware
-  const user = (req as any).user;
-
   res.status(200).json({
     status: 'success',
     data: {
       valid: true,
-      user: user,
+      user: req.user,
     },
+  });
+});
+
+export const changePassword = catchAsync(async (req: AuthRequest, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+
+  await authService.changePassword(
+    req.user!.id,
+    req.user!.role,
+    currentPassword,
+    newPassword
+  );
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password changed successfully',
   });
 });

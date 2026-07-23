@@ -168,7 +168,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           avatar: user.profileImage,
         }}
         onLogout={handleLogout}
-        onProfileClick={() => router.push('/profile')}
+        onProfileClick={() => router.push('/admin/settings')}
         onSettingsClick={() => router.push('/admin/settings')}
         sticky
       />

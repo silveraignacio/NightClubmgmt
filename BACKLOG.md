@@ -61,16 +61,76 @@ verificación de ID/ban list.
       **Pendiente**: verificación visual en navegador — bloqueada en esta sesión por un
       mismatch de versión de binarios de Playwright en el entorno (no relacionado al código).
 
+## P0.5 — Review con Opus 4.8 como advisor (post-merge del fix de contrato) — EN CURSO
+
+Review crítico del estado actual del código tras el merge del PR #2. Ver hilo de la sesión
+para el detalle completo de cada hallazgo.
+
+### Crítico (seguridad)
+- [ ] **C1. Control de acceso roto en socios** — `backend/src/routes/members.ts`: solo
+      `createMember`/`deleteMember` tienen `restrictTo`. `GET members`, `GET by-qr`,
+      `PATCH members/:id`, `qr-code`, `stats` no tienen restricción de rol → cualquier
+      socio logueado puede listar/editar datos de **todos** los demás socios de su club
+      (nombre, email, teléfono, fecha de nacimiento, gastos). Horizontal-privilege gap real.
+- [ ] **C2. `qrService.getMemberByQR` filtra `password_hash`** — código muerto (sin uso hoy)
+      que hace `SELECT cm.*`; bomba de tiempo para el próximo que lo conecte. Borrar o
+      acotar columnas.
+
+### Advertencias
+- [ ] **W1.** `/forbidden` no existe — `lib/api.ts` redirige ahí en 403, termina en 404 de Next.
+- [ ] **W2.** Enlaces muertos en la nav: `/admin/analytics/visits`, `/admin/analytics/revenue`
+      (backend ya tiene los datos, falta pantalla), `/admin/settings`, `/profile`
+      (navbar `onProfileClick`, debería ir a `/member/profile`), `/admin/members/[id]`,
+      `/admin/members/[id]/edit`.
+- [ ] **W3.** Filtro de Tier/Status en socios es solo client-side sobre la página ya traída
+      (el backend no acepta esos params) → paginación/total quedan inconsistentes con el
+      filtro aplicado. Status ni está conectado (todos "ACTIVE" hardcodeado).
+- [ ] **W4.** Botones/acciones que fingen funcionar: cambio de contraseña (portal socio,
+      no hay endpoint), canje de recompensas (100% mock), toggles de notificaciones
+      (solo local, el backend sí acepta `notifications_enabled`/`sms_enabled`), edición de
+      fecha de nacimiento (se pierde silenciosamente al guardar perfil), exportar socios
+      a CSV (`console.log`), borrar socio (`console.log`, el endpoint backend ya existe).
+- [ ] **W5.** Bar POS calcula descuento/puntos con una tabla de tiers hardcodeada en el
+      frontend en vez de usar la data real de `membership_tiers` (`getMembershipTiers` ya
+      existe) — se desincroniza con cualquier tier custom o distinto a los 4 nombres literales.
+- [ ] **W6.** JWT secret inconsistente: `authService.ts` firma con fallback hardcodeado
+      (`'your-secret-key'`) si falta `JWT_SECRET`, pero `middleware/auth.ts` rechaza verificar
+      sin la env var → login "funciona" pero todo pedido posterior tira 500. Sacar el fallback,
+      fallar rápido al arrancar si falta la env var.
+
+### Sugerencias (menores)
+- [ ] **S1.** Comentario aclaratorio en `qrService.ts`: el parseo de `clubId` por longitud de
+      UUID es solo un atajo de error amigable, el aislamiento real lo da el `WHERE club_id = $2`.
+- [ ] **S2.** `middleware/auth.ts`: `optionalAuth` confía en el JWT sin verificar existencia
+      del usuario (a diferencia de `protect`). Sin uso hoy — borrar o alinear antes de conectarlo.
+- [ ] **S3.** Paginación de transacciones es una aproximación (`transactions.ts`) porque el
+      backend no devuelve conteo total, solo `totalAmount` — agregar `COUNT(*)` al endpoint.
+- [ ] **S4.** `server.ts` loguea con `console.log` detalles de `DATABASE_URL`/health en cada
+      request — pasar a `logger.debug`.
+- [ ] **S5.** Bar POS etiqueta cualquier canasta mixta bebida+comida como `drink_sale`
+      (`every(...=== 'Food')`) — sesga la analítica por categoría a futuro.
+
+### Agregar a continuación (barato, alto impacto, sin Stripe)
+- [ ] Conectar lo ya construido antes de sumar features nuevas: borrar socio, ver/editar
+      socio, pantallas de analítica, persistencia de preferencias de notificación.
+- [ ] Endpoint real de canje de puntos (`rewards`/`redeemed_rewards` ya están en el schema,
+      falta API) — cierra el loop del diferenciador de lealtad.
+- [ ] Auto-seedear tiers Bronze/Silver/Gold/Platinum al registrar un club nuevo — hoy un
+      club recién creado queda vacío y varias pantallas se ven rotas hasta cargar datos a mano.
+- [ ] Filtros de socios server-side (tier/status/búsqueda) — prerequisito real para que el
+      filtro de W3 y la exportación a CSV tengan sentido.
+- [ ] DX: script único de bootstrap (migrar + seed + levantar ambos servidores) documentado
+      en el README, con las credenciales de `seedDemo.ts`.
+
 ## P1 — Cerrar el SaaS (monetización y gestión)
 
 - [ ] Conectar Stripe (billing de clubes): montar rutas/webhook para `stripeService.ts`
-      (ya escrito, hoy huérfano); enforcement de `features`/`max_members` por plan
+      (ya escrito, hoy huérfano); enforcement de `features`/`max_members` por plan — **no
+      prioritario ahora mismo** (decisión explícita del owner del producto)
 - [ ] API de escritura para `membership_tiers` (crear/editar niveles de afiliación) —
       ya existe un `GET` de solo lectura (P0), falta create/update/delete
-- [ ] API de rewards/redemption real (hoy el portal usa mocks) + `redeemed_rewards`
-- [ ] Pantallas de analítica que consuman `routes/metrics.ts` (hoy sin UI)
 - [ ] Refresh tokens (frontend ya espera el campo, backend no lo emite)
-- [ ] Exportación real de socios a CSV (hoy botón sin funcionalidad)
+- [ ] (rewards/redemption, pantallas de analítica y export CSV — ver P0.5, ya en curso)
 
 ## P2 — Diferenciadores competitivos
 

@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PageLoader, Skeleton } from '@/components/Loading';
-import { getMembers, Member, GetMembersParams } from '@/lib';
+import { getMembers, deleteMember, exportMembersCsv, Member, GetMembersParams } from '@/lib';
 import {
   Search,
   UserPlus,
@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 
 type TierFilter = 'ALL' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
-type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export default function MembersPage() {
   const { user } = useAuth();
@@ -30,17 +29,20 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<TierFilter>('ALL');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
     if (user?.clubId) {
       loadMembers();
     }
-  }, [user, currentPage, tierFilter, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, currentPage, tierFilter]);
 
   // Debounce search
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function MembersPage() {
     }, 500);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const loadMembers = async () => {
@@ -63,8 +66,6 @@ export default function MembersPage() {
       const params: GetMembersParams = {
         page: currentPage,
         pageSize,
-        sortBy: 'joinDate',
-        sortOrder: 'desc',
       };
 
       if (searchQuery) {
@@ -72,11 +73,7 @@ export default function MembersPage() {
       }
 
       if (tierFilter !== 'ALL') {
-        params.tier = tierFilter as any;
-      }
-
-      if (statusFilter !== 'ALL') {
-        params.status = statusFilter as any;
+        params.tier = tierFilter;
       }
 
       const response = await getMembers(user.clubId, params);
@@ -87,6 +84,37 @@ export default function MembersPage() {
       console.error('Failed to load members:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (member: Member) => {
+    if (!user?.clubId) return;
+    if (!confirm(`Are you sure you want to delete ${member.firstName} ${member.lastName}? This cannot be undone.`)) {
+      return;
+    }
+
+    setActionError(null);
+    setDeletingId(member.id);
+    try {
+      await deleteMember(user.clubId, member.id);
+      await loadMembers();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete member');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!user?.clubId) return;
+    setActionError(null);
+    setExporting(true);
+    try {
+      await exportMembersCsv(user.clubId, `members-${user.clubId}.csv`);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to export members');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -149,7 +177,7 @@ export default function MembersPage() {
       {/* Search and Filters */}
       <Card>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
               <Input
@@ -175,21 +203,11 @@ export default function MembersPage() {
                 <option value="PLATINUM">Platinum</option>
               </select>
             </div>
-
-            {/* Status Filter */}
-            <div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
-            </div>
           </div>
+
+          {actionError && (
+            <p className="text-sm text-red-600 border-t border-gray-200 pt-4">{actionError}</p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between border-t border-gray-200 pt-4">
@@ -200,10 +218,9 @@ export default function MembersPage() {
               variant="ghost"
               size="sm"
               leftIcon={<Download className="h-4 w-4" />}
-              onClick={() => {
-                // TODO: Implement export functionality
-                console.log('Export members');
-              }}
+              onClick={handleExport}
+              isLoading={exporting}
+              disabled={exporting}
             >
               Export
             </Button>
@@ -326,17 +343,9 @@ export default function MembersPage() {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you want to delete ${member.firstName} ${member.lastName}?`
-                                )
-                              ) {
-                                // TODO: Implement delete
-                                console.log('Delete member:', member.id);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
+                            onClick={() => handleDelete(member)}
+                            disabled={deletingId === member.id}
+                            className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded disabled:opacity-50"
                             aria-label="Delete member"
                           >
                             <Trash2 className="h-4 w-4" />

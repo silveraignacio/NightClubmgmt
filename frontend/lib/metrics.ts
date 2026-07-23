@@ -37,3 +37,79 @@ export const getMemberMetrics = async (
     throw handleApiError(error);
   }
 };
+
+export interface RevenueTrendPoint {
+  date: string;
+  revenue: number;
+  transactionCount: number;
+}
+
+export interface RevenueMetrics {
+  monthlyRevenue: number;
+  transactionCount: number;
+  averageTransaction: number;
+  trends: RevenueTrendPoint[];
+}
+
+/**
+ * Get revenue metrics + daily trend for a club.
+ * Backed by GET /clubs/:clubId/metrics/revenue (admin/manager only).
+ */
+export const getRevenueMetrics = async (clubId: string, days = 30): Promise<RevenueMetrics> => {
+  try {
+    const response = await apiClient.get<
+      ApiResponse<{
+        summary: { monthlyRevenue: number; transactionCount: number; averageTransaction: number };
+        trends: RevenueTrendPoint[];
+      }>
+    >(`/clubs/${clubId}/metrics/revenue`, { params: { days } });
+
+    const data = response.data.data;
+    return {
+      monthlyRevenue: data?.summary.monthlyRevenue || 0,
+      transactionCount: data?.summary.transactionCount || 0,
+      averageTransaction: data?.summary.averageTransaction || 0,
+      trends: data?.trends || [],
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
+export interface VisitTrendPoint {
+  date: string;
+  visits: number;
+  uniqueMembers: number;
+}
+
+export interface EngagementMetrics {
+  dailyVisits: number;
+  avgVisitsPerMember: number;
+  repeatVisitRate: number;
+  trends: VisitTrendPoint[];
+}
+
+/**
+ * Get visit/engagement metrics + daily trend for a club.
+ * Backed by GET /clubs/:clubId/metrics/engagement (admin/manager only).
+ */
+export const getEngagementMetrics = async (clubId: string, days = 30): Promise<EngagementMetrics> => {
+  try {
+    const response = await apiClient.get<
+      ApiResponse<{
+        summary: { dailyVisits: number; avgVisitsPerMember: number; repeatVisitRate: number };
+        trends: VisitTrendPoint[];
+      }>
+    >(`/clubs/${clubId}/metrics/engagement`, { params: { days } });
+
+    const data = response.data.data;
+    return {
+      dailyVisits: data?.summary.dailyVisits || 0,
+      avgVisitsPerMember: data?.summary.avgVisitsPerMember || 0,
+      repeatVisitRate: data?.summary.repeatVisitRate || 0,
+      trends: data?.trends || [],
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};

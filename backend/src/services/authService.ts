@@ -4,8 +4,16 @@ import { query } from '../config/database';
 import { AppError } from '../utils/errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
+
+// Same 4 tiers backend/src/scripts/seedDemo.ts creates for the demo club —
+// kept in sync so a real new signup and the demo club start from the same shape.
+const DEFAULT_MEMBERSHIP_TIERS = [
+  { tierName: 'Bronze', colorHex: '#B45309', pointsMultiplier: 1.0, discountPercentage: 5, sortOrder: 0 },
+  { tierName: 'Silver', colorHex: '#6B7280', pointsMultiplier: 1.25, discountPercentage: 10, sortOrder: 1 },
+  { tierName: 'Gold', colorHex: '#D97706', pointsMultiplier: 1.5, discountPercentage: 15, sortOrder: 2 },
+  { tierName: 'Platinum', colorHex: '#7C3AED', pointsMultiplier: 2.0, discountPercentage: 20, sortOrder: 3 },
+];
 
 export interface RegisterData {
   email: string;
@@ -22,9 +30,20 @@ export interface LoginData {
 }
 
 export const signToken = (id: string, email: string, role: string, clubId?: string): string => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    // The server refuses to boot without JWT_SECRET (see server.ts), so this
+    // is unreachable in normal operation — it only guards against this module
+    // being imported directly (e.g. a script) outside that bootstrap. No
+    // fallback secret: signing with a well-known default is a real risk, and
+    // it just defers the failure to the next authenticated request instead of
+    // failing here where it's obvious.
+    throw new AppError('JWT_SECRET is not configured', 500);
+  }
+
   return jwt.sign(
     { id, email, role, clubId },
-    JWT_SECRET,
+    jwtSecret,
     { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
   );
 };
@@ -88,6 +107,19 @@ export const registerClubOwner = async (data: RegisterData) => {
 
   // Update club owner
   await query('UPDATE clubs SET owner_id = $1 WHERE id = $2', [user.id, club.id]);
+
+  // Seed default membership tiers so the club isn't unusable out of the box
+  // (bar discounts, member registration, etc. all depend on tiers existing —
+  // see BACKLOG.md). Mirrors backend/src/scripts/seedDemo.ts.
+  await Promise.all(
+    DEFAULT_MEMBERSHIP_TIERS.map((tier) =>
+      query(
+        `INSERT INTO membership_tiers (club_id, tier_name, color_hex, points_multiplier, discount_percentage, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [club.id, tier.tierName, tier.colorHex, tier.pointsMultiplier, tier.discountPercentage, tier.sortOrder]
+      )
+    )
+  );
 
   // Generate token
   const token = signToken(user.id, user.email, user.role, club.id);
@@ -250,4 +282,47 @@ export const login = async (data: LoginData) => {
       pointsBalance: member.points_balance,
     },
   };
+};
+
+/**
+ * Change the current user's own password. Works for both staff (club_users)
+ * and members (club_members) — the caller is looked up by id in whichever
+ * table their role implies, mirroring how `protect` resolves the JWT.
+ */
+export const changePassword = async (
+  userId: string,
+  role: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  const table = role === 'member' ? 'club_members' : 'club_users';
+
+  const result = await query(
+    `SELECT id, password_hash FROM ${table} WHERE id = $1`,
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('User not found', 404);
+  }
+
+  const isCurrentPasswordCorrect = await comparePasswords(
+    currentPassword,
+    result.rows[0].password_hash
+  );
+
+  if (!isCurrentPasswordCorrect) {
+    // 400, not 401: the caller IS authenticated (protect already passed), they
+    // just mistyped their current password. The frontend's response
+    // interceptor treats any 401 as "session invalid" and force-logs-out —
+    // that would be the wrong UX for a simple form validation error here.
+    throw new AppError('Current password is incorrect', 400);
+  }
+
+  const newPasswordHash = await hashPassword(newPassword);
+
+  await query(`UPDATE ${table} SET password_hash = $1 WHERE id = $2`, [
+    newPasswordHash,
+    userId,
+  ]);
 };

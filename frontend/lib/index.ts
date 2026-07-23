@@ -19,6 +19,8 @@ export {
   getMemberQRCode,
   getMemberStats,
   updateMember,
+  deleteMember,
+  exportMembersCsv,
   getMembershipTiers,
 } from './members';
 export type {
@@ -58,30 +60,25 @@ export type {
 } from './transactions';
 
 // Rewards
-export {
-  getRewards,
-  getReward,
-  createReward,
-  updateReward,
-  deleteReward,
-  getMemberRedeemedRewards,
-  getRedeemedRewards,
-  redeemReward,
-  markRewardAsUsed,
-  getRewardCategories,
-  getRewardsByCategory,
-  searchRewards,
-  exportRedeemedRewards,
-} from './rewards';
+export { getRewards, redeemReward, getMyRedeemedRewards } from './rewards';
 export type {
   Reward,
   RedeemedReward,
-  CreateRewardData,
-  RedeemRewardData,
-  GetRewardsParams,
-  GetRedeemedRewardsParams,
+  RedeemResult,
+  RewardType,
+  RedemptionStatus,
 } from './rewards';
 
 // Metrics
-export { getMemberMetrics } from './metrics';
-export type { MemberMetricsSummary } from './metrics';
+export { getMemberMetrics, getRevenueMetrics, getEngagementMetrics } from './metrics';
+export type {
+  MemberMetricsSummary,
+  RevenueMetrics,
+  RevenueTrendPoint,
+  EngagementMetrics,
+  VisitTrendPoint,
+} from './metrics';
+
+// Clubs
+export { getClub, updateClub } from './clubs';
+export type { Club, UpdateClubData as UpdateClubSettingsData } from './clubs';

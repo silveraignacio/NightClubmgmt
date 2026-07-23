@@ -8,6 +8,7 @@ import {
   type Member,
   type MemberStats,
 } from '@/lib';
+import apiClient from '@/lib/api';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
   Card,
@@ -65,12 +66,9 @@ export default function ProfilePage() {
     confirmPassword: '',
   });
 
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    email: true,
-    sms: false,
-    promotions: true,
-  });
+  // Notification settings (persisted via updateMember's notificationsEnabled/smsEnabled)
+  const [notifications, setNotifications] = useState({ email: true, sms: false });
+  const [savingNotification, setSavingNotification] = useState<'email' | 'sms' | null>(null);
 
   // Fetch data on mount
   useEffect(() => {
@@ -96,6 +94,10 @@ export default function ProfilePage() {
           email: memberData.email,
           phone: memberData.phone,
           dateOfBirth: memberData.dateOfBirth,
+        });
+        setNotifications({
+          email: memberData.notificationsEnabled,
+          sms: memberData.smsEnabled,
         });
       } catch (err) {
         const message =
@@ -128,12 +130,13 @@ export default function ProfilePage() {
       setError(null);
       setSuccess(null);
 
-      // The backend only supports updating `fullName`/`phone` — first/last
-      // name are combined client-side since the schema stores a single
-      // full_name column (see membersController.updateMember's allowedFields).
+      // First/last name are combined client-side since the schema stores a
+      // single full_name column (see membersController.updateMember's
+      // allowedFields — email is intentionally not sent, it's read-only here).
       const updated = await updateMember(user.clubId, member.id, {
         fullName: `${profileForm.firstName} ${profileForm.lastName}`.trim(),
         phone: profileForm.phone,
+        dateOfBirth: profileForm.dateOfBirth || undefined,
       });
 
       setMember(updated);
@@ -171,9 +174,11 @@ export default function ProfilePage() {
 
     try {
       setIsSaving(true);
-      // In a real app, this would call an API endpoint
-      // For now, we'll just show a success message
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await apiClient.post('/auth/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
 
       setSuccess('Password changed successfully!');
       setPasswordForm({
@@ -183,11 +188,34 @@ export default function ProfilePage() {
       });
       setIsChangingPassword(false);
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError('Failed to change password');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to change password');
       console.error('Error changing password:', err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle notification preference toggle (persisted immediately on change)
+  const handleToggleNotification = async (key: 'email' | 'sms') => {
+    if (!member || !user?.clubId) return;
+
+    const next = { ...notifications, [key]: !notifications[key] };
+    setNotifications(next);
+    setSavingNotification(key);
+    setError(null);
+
+    try {
+      await updateMember(user.clubId, member.id, {
+        notificationsEnabled: next.email,
+        smsEnabled: next.sms,
+      });
+    } catch (err) {
+      // Revert on failure
+      setNotifications(notifications);
+      setError('Failed to update notification preference');
+    } finally {
+      setSavingNotification(null);
     }
   };
 
@@ -520,23 +548,20 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                {
-                  id: 'email',
-                  label: 'Email Notifications',
-                  description: 'Receive updates via email',
-                },
-                {
-                  id: 'sms',
-                  label: 'SMS Notifications',
-                  description: 'Receive updates via text message',
-                },
-                {
-                  id: 'promotions',
-                  label: 'Promotional Offers',
-                  description: 'Get exclusive deals and offers',
-                },
-              ].map((setting) => (
+              {(
+                [
+                  {
+                    id: 'email',
+                    label: 'Email Notifications',
+                    description: 'Receive updates via email',
+                  },
+                  {
+                    id: 'sms',
+                    label: 'SMS Notifications',
+                    description: 'Receive updates via text message',
+                  },
+                ] as const
+              ).map((setting) => (
                 <div
                   key={setting.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-gray-700/30"
@@ -546,23 +571,15 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-400">{setting.description}</p>
                   </div>
                   <button
-                    onClick={() =>
-                      setNotifications({
-                        ...notifications,
-                        [setting.id]: !notifications[setting.id as keyof typeof notifications],
-                      })
-                    }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      notifications[setting.id as keyof typeof notifications]
-                        ? 'bg-purple-600'
-                        : 'bg-gray-700'
+                    onClick={() => handleToggleNotification(setting.id)}
+                    disabled={savingNotification === setting.id}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                      notifications[setting.id] ? 'bg-purple-600' : 'bg-gray-700'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        notifications[setting.id as keyof typeof notifications]
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
+                        notifications[setting.id] ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
