@@ -8,110 +8,115 @@ export interface Visit {
   memberName: string;
   checkInTime: string;
   checkOutTime?: string;
-  duration?: number; // in minutes
-  entryMethod: 'QR_CODE' | 'MANUAL' | 'ID_CARD';
+  entryMethod: 'QR_SCAN' | 'MANUAL' | 'LIST_ENTRY';
   guestCount: number;
   amount?: number;
   notes?: string;
+  pointsEarned?: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateVisitData {
-  memberId: string;
-  checkInTime?: string;
-  entryMethod: 'QR_CODE' | 'MANUAL' | 'ID_CARD';
-  guestCount?: number;
+  qrCodeId: string;
+  entryMethod?: 'qr_scan' | 'manual' | 'list_entry';
+  entryType?: 'free_entry' | 'paid_entry' | 'vip_pass' | 'promotional';
   notes?: string;
-}
-
-export interface CheckOutData {
-  checkOutTime?: string;
-  notes?: string;
-}
-
-export interface VisitStats {
-  today: number;
-  week: number;
-  month: number;
-  total: number;
-  averageGuestsPerVisit: number;
-  peakHours: Array<{
-    hour: number;
-    count: number;
-  }>;
 }
 
 export interface GetVisitsParams {
   page?: number;
   pageSize?: number;
-  memberId?: string;
   startDate?: string;
   endDate?: string;
-  entryMethod?: 'QR_CODE' | 'MANUAL' | 'ID_CARD';
   sortBy?: 'checkInTime' | 'memberName' | 'guestCount';
   sortOrder?: 'asc' | 'desc';
+}
+
+// Raw backend visits row (snake_case), optionally joined with member/scanner names.
+interface RawVisit {
+  id: string;
+  club_id: string;
+  member_id: string;
+  member_name?: string;
+  entry_time: string;
+  exit_time: string | null;
+  entry_method: string;
+  notes: string | null;
+  points_earned: number;
+  created_at: string;
+}
+
+const ENTRY_METHOD_MAP: Record<string, Visit['entryMethod']> = {
+  qr_scan: 'QR_SCAN',
+  manual: 'MANUAL',
+  list_entry: 'LIST_ENTRY',
+};
+
+function mapVisit(raw: RawVisit, memberNameOverride?: string): Visit {
+  return {
+    id: raw.id,
+    memberId: raw.member_id,
+    clubId: raw.club_id,
+    memberName: memberNameOverride || raw.member_name || '',
+    checkInTime: raw.entry_time,
+    checkOutTime: raw.exit_time || undefined,
+    entryMethod: ENTRY_METHOD_MAP[raw.entry_method] || 'MANUAL',
+    guestCount: 0, // the schema has no guest-count concept on visits
+    notes: raw.notes || undefined,
+    pointsEarned: raw.points_earned,
+    createdAt: raw.created_at,
+    updatedAt: raw.created_at,
+  };
 }
 
 // Visits API calls
 
 /**
- * Create a new visit check-in
+ * Create a new visit check-in by resolving a member's QR code
  */
-export const createVisit = async (
-  clubId: string,
-  data: CreateVisitData
-): Promise<Visit> => {
+export const createVisit = async (clubId: string, data: CreateVisitData): Promise<Visit> => {
   try {
-    const response = await apiClient.post<ApiResponse<Visit>>(
-      `/clubs/${clubId}/visits`,
-      data
-    );
+    const response = await apiClient.post<
+      ApiResponse<{ visit: RawVisit; member: { fullName: string }; pointsEarned: number }>
+    >(`/clubs/${clubId}/visits`, data);
 
-    return response.data.data || ({} as Visit);
+    const result = response.data.data;
+    if (!result) throw new Error('Failed to create visit');
+    return mapVisit(result.visit, result.member?.fullName);
   } catch (error) {
     throw handleApiError(error);
   }
 };
 
 /**
- * Get all visits for a club with pagination and filtering
+ * Get all visits for a club (most recent first)
  */
 export const getVisits = async (
   clubId: string,
   params?: GetVisitsParams
 ): Promise<PaginatedResponse<Visit>> => {
   try {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Visit>>>(
-      `/clubs/${clubId}/visits`,
-      { params }
-    );
+    const limit = params?.pageSize || 50;
+    const page = params?.page || 1;
+    const offset = (page - 1) * limit;
 
-    return response.data.data || {
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
+    const response = await apiClient.get<
+      ApiResponse<{ visits: RawVisit[]; total: number; limit: number; offset: number }>
+    >(`/clubs/${clubId}/visits`, {
+      params: { startDate: params?.startDate, endDate: params?.endDate, limit, offset },
+    });
+
+    const data = response.data.data;
+    if (!data) return { data: [], total: 0, page: 1, pageSize: limit, totalPages: 0 };
+
+    return {
+      data: data.visits.map((v) => mapVisit(v)),
+      total: data.total,
+      page,
+      pageSize: limit,
+      totalPages: Math.max(1, Math.ceil(data.total / limit)),
     };
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get a specific visit by ID
- */
-export const getVisit = async (
-  clubId: string,
-  visitId: string
-): Promise<Visit> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Visit>>(
-      `/clubs/${clubId}/visits/${visitId}`
-    );
-
-    return response.data.data || ({} as Visit);
   } catch (error) {
     throw handleApiError(error);
   }
@@ -123,45 +128,10 @@ export const getVisit = async (
 export const getTodayVisitsCount = async (clubId: string): Promise<number> => {
   try {
     const response = await apiClient.get<ApiResponse<{ count: number }>>(
-      `/clubs/${clubId}/visits/stats/today`
+      `/clubs/${clubId}/visits/today/count`
     );
 
     return response.data.data?.count || 0;
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get visit statistics
- */
-export const getVisitStats = async (clubId: string): Promise<VisitStats> => {
-  try {
-    const response = await apiClient.get<ApiResponse<VisitStats>>(
-      `/clubs/${clubId}/visits/stats`
-    );
-
-    return response.data.data || ({} as VisitStats);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Check out a member from a visit
- */
-export const checkOutVisit = async (
-  clubId: string,
-  visitId: string,
-  data?: CheckOutData
-): Promise<Visit> => {
-  try {
-    const response = await apiClient.patch<ApiResponse<Visit>>(
-      `/clubs/${clubId}/visits/${visitId}/checkout`,
-      data || {}
-    );
-
-    return response.data.data || ({} as Visit);
   } catch (error) {
     throw handleApiError(error);
   }
@@ -173,94 +143,24 @@ export const checkOutVisit = async (
 export const getMemberVisits = async (
   clubId: string,
   memberId: string,
-  params?: Omit<GetVisitsParams, 'memberId'>
+  params?: Omit<GetVisitsParams, 'sortBy' | 'sortOrder'>
 ): Promise<PaginatedResponse<Visit>> => {
   try {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Visit>>>(
+    const limit = params?.pageSize || 20;
+
+    const response = await apiClient.get<ApiResponse<{ visits: RawVisit[] }>>(
       `/clubs/${clubId}/members/${memberId}/visits`,
-      { params }
+      { params: { limit } }
     );
 
-    return response.data.data || {
-      data: [],
-      total: 0,
+    const visits = response.data.data?.visits || [];
+    return {
+      data: visits.map((v) => mapVisit(v)),
+      total: visits.length,
       page: 1,
-      pageSize: 10,
-      totalPages: 0,
+      pageSize: limit,
+      totalPages: 1,
     };
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get active visits (current check-ins)
- */
-export const getActiveVisits = async (clubId: string): Promise<Visit[]> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Visit[]>>(
-      `/clubs/${clubId}/visits/active`
-    );
-
-    return response.data.data || [];
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Get visits by date range
- */
-export const getVisitsByDateRange = async (
-  clubId: string,
-  startDate: string,
-  endDate: string
-): Promise<Visit[]> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Visit[]>>(
-      `/clubs/${clubId}/visits/date-range`,
-      { params: { startDate, endDate } }
-    );
-
-    return response.data.data || [];
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Update visit information
- */
-export const updateVisit = async (
-  clubId: string,
-  visitId: string,
-  data: Partial<Visit>
-): Promise<Visit> => {
-  try {
-    const response = await apiClient.put<ApiResponse<Visit>>(
-      `/clubs/${clubId}/visits/${visitId}`,
-      data
-    );
-
-    return response.data.data || ({} as Visit);
-  } catch (error) {
-    throw handleApiError(error);
-  }
-};
-
-/**
- * Delete a visit record
- */
-export const deleteVisit = async (
-  clubId: string,
-  visitId: string
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    const response = await apiClient.delete<
-      ApiResponse<{ success: boolean; message: string }>
-    >(`/clubs/${clubId}/visits/${visitId}`);
-
-    return response.data.data || { success: true, message: 'Visit deleted' };
   } catch (error) {
     throw handleApiError(error);
   }

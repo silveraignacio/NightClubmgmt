@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   getMember,
-  getMemberTransactions,
+  getMemberStats,
   updateMember,
   type Member,
-  type Transaction,
+  type MemberStats,
 } from '@/lib';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
@@ -38,7 +38,7 @@ import { format } from 'date-fns';
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const [member, setMember] = useState<Member | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [recentActivity, setRecentActivity] = useState<MemberStats['recentVisits']>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -81,13 +81,13 @@ export default function ProfilePage() {
         setLoading(true);
         setError(null);
 
-        const [memberData, transactionsData] = await Promise.all([
+        const [memberData, statsData] = await Promise.all([
           getMember(user.clubId, user.id),
-          getMemberTransactions(user.clubId, user.id, { pageSize: 10 }),
+          getMemberStats(user.clubId, user.id),
         ]);
 
         setMember(memberData);
-        setTransactions(transactionsData.data || []);
+        setRecentActivity(statsData.recentVisits || []);
 
         // Initialize form with member data
         setProfileForm({
@@ -128,11 +128,12 @@ export default function ProfilePage() {
       setError(null);
       setSuccess(null);
 
+      // The backend only supports updating `fullName`/`phone` — first/last
+      // name are combined client-side since the schema stores a single
+      // full_name column (see membersController.updateMember's allowedFields).
       const updated = await updateMember(user.clubId, member.id, {
-        firstName: profileForm.firstName,
-        lastName: profileForm.lastName,
+        fullName: `${profileForm.firstName} ${profileForm.lastName}`.trim(),
         phone: profileForm.phone,
-        dateOfBirth: profileForm.dateOfBirth,
       });
 
       setMember(updated);
@@ -648,43 +649,29 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="text-white">Recent Transactions</CardTitle>
           <CardDescription className="text-gray-400">
-            Your last 10 transactions
+            Your last purchases at the club
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {transactions.length > 0 ? (
+          {recentActivity.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-gray-700">
                   <tr className="text-gray-400">
                     <th className="text-left py-3 px-2 font-medium">Date</th>
-                    <th className="text-left py-3 px-2 font-medium">Type</th>
+                    <th className="text-left py-3 px-2 font-medium">Description</th>
                     <th className="text-left py-3 px-2 font-medium">Amount</th>
-                    <th className="text-left py-3 px-2 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {transactions.map((tx) => (
+                  {recentActivity.map((tx) => (
                     <tr key={tx.id} className="hover:bg-gray-700/50 transition">
                       <td className="py-3 px-2 text-white">
-                        {format(new Date(tx.createdAt), 'MMM d, yyyy')}
+                        {format(new Date(tx.date), 'MMM d, yyyy')}
                       </td>
-                      <td className="py-3 px-2 text-gray-400">{tx.type}</td>
+                      <td className="py-3 px-2 text-gray-400">{tx.description}</td>
                       <td className="py-3 px-2 font-semibold text-white">
                         ${tx.amount.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            tx.status === 'COMPLETED'
-                              ? 'bg-green-900/30 text-green-400'
-                              : tx.status === 'PENDING'
-                                ? 'bg-yellow-900/30 text-yellow-400'
-                                : 'bg-red-900/30 text-red-400'
-                          }`}
-                        >
-                          {tx.status}
-                        </span>
                       </td>
                     </tr>
                   ))}

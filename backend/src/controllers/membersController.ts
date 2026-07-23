@@ -6,13 +6,22 @@ import { generateQRCode } from '../services/qrService';
 import { v4 as uuidv4 } from 'uuid';
 import { auditService, AuditActionType } from '../services/auditService';
 
+// Never select cm.password_hash out to API responses.
+const MEMBER_COLUMNS = `
+  cm.id, cm.club_id, cm.email, cm.phone, cm.full_name, cm.qr_code_id,
+  cm.membership_type, cm.membership_tier_id, cm.points_balance, cm.total_visits,
+  cm.total_spent, cm.last_visit, cm.profile_photo_url, cm.date_of_birth,
+  cm.phone_verified, cm.email_verified, cm.notifications_enabled, cm.sms_enabled,
+  cm.registration_date, cm.updated_at
+`;
+
 export const getAllMembers = catchAsync(async (req: AuthRequest, res: Response) => {
   const clubId = req.clubId;
   const { search, membershipType, limit = '50', offset = '0' } = req.query;
 
   let queryText = `
     SELECT
-      cm.*,
+      ${MEMBER_COLUMNS},
       mt.tier_name,
       mt.color_hex,
       mt.discount_percentage
@@ -36,7 +45,7 @@ export const getAllMembers = catchAsync(async (req: AuthRequest, res: Response) 
     paramIndex++;
   }
 
-  queryText += ` ORDER BY cm.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+  queryText += ` ORDER BY cm.registration_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(parseInt(limit as string), parseInt(offset as string));
 
   const result = await query(queryText, params);
@@ -64,7 +73,7 @@ export const getMemberById = catchAsync(async (req: AuthRequest, res: Response) 
 
   const result = await query(
     `SELECT
-      cm.*,
+      ${MEMBER_COLUMNS},
       mt.tier_name,
       mt.color_hex,
       mt.discount_percentage,
@@ -218,6 +227,32 @@ export const deleteMember = catchAsync(async (req: AuthRequest, res: Response) =
   );
 
   res.status(204).send();
+});
+
+export const getMemberByQrCode = catchAsync(async (req: AuthRequest, res: Response) => {
+  const { qrCodeId } = req.params;
+  const clubId = req.clubId;
+
+  const result = await query(
+    `SELECT
+      ${MEMBER_COLUMNS},
+      mt.tier_name,
+      mt.color_hex,
+      mt.discount_percentage
+    FROM club_members cm
+    LEFT JOIN membership_tiers mt ON cm.membership_tier_id = mt.id
+    WHERE cm.qr_code_id = $1 AND cm.club_id = $2`,
+    [qrCodeId, clubId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('Member not found', 404);
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { member: result.rows[0] },
+  });
 });
 
 export const getMemberQRCode = catchAsync(async (req: AuthRequest, res: Response) => {

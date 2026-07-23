@@ -22,6 +22,8 @@ router
   .patch(ensureClubAccess, validate(memberUpdateSchema), membersController.updateMember)
   .delete(ensureClubAccess, restrictTo('admin', 'manager'), membersController.deleteMember);
 
+router.get('/clubs/:clubId/members/by-qr/:qrCodeId', ensureClubAccess, membersController.getMemberByQrCode);
+
 router.get('/clubs/:clubId/members/:memberId/qr-code', ensureClubAccess, membersController.getMemberQRCode);
 router.get('/clubs/:clubId/members/:memberId/stats', ensureClubAccess, membersController.getMemberStats);
 

@@ -34,20 +34,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       return;
     }
 
-    // Role-based redirect
-    if (user && user.role && pathname === '/admin') {
-      const role = user.role.toLowerCase();
-
-      // Doorman/Security role - redirect to door
-      if (role === 'security') {
-        router.push('/admin/door');
+    // Role-based redirect. Backend roles: admin, manager, doorman, bartender, member
+    // (see backend/src/services/authService.ts / middleware/auth.ts restrictTo usage).
+    if (user && user.role) {
+      if (user.role === 'member') {
+        router.push('/member');
         return;
       }
 
-      // Bartender/Staff role - redirect to bar
-      if (role === 'staff' || role === 'host') {
-        router.push('/admin/bar');
-        return;
+      if (pathname === '/admin') {
+        if (user.role === 'doorman') {
+          router.push('/admin/door');
+          return;
+        }
+
+        if (user.role === 'bartender') {
+          router.push('/admin/bar');
+          return;
+        }
       }
     }
   }, [user, isAuthenticated, isLoading, router, pathname]);
@@ -62,31 +66,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return null;
   }
 
-  const role = user.role.toLowerCase();
+  const role = user.role;
 
-  // Define menu items based on role
+  // Define menu items based on role (admin/manager/doorman/bartender/member)
   const getMenuItems = (): SidebarMenuItem[] => {
     const items: SidebarMenuItem[] = [];
 
     // Admin and Manager roles - full access
-    if (role === 'admin' || role === 'club_owner' || role === 'club_manager' || role === 'super_admin') {
+    if (role === 'admin' || role === 'manager') {
       items.push(
         {
           label: 'Dashboard',
           href: '/admin',
           icon: <LayoutDashboard className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
         },
         {
           label: 'Members',
           href: '/admin/members',
           icon: <Users className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
         },
         {
           label: 'Analytics',
           icon: <BarChart3 className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
           children: [
             {
               label: 'Visits',
@@ -104,40 +108,40 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           label: 'Door Control',
           href: '/admin/door',
           icon: <DoorOpen className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
         },
         {
           label: 'Bar & POS',
           href: '/admin/bar',
           icon: <Wine className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
         },
         {
           label: 'Settings',
           href: '/admin/settings',
           icon: <Settings className="h-5 w-5" />,
-          requiredRoles: ['admin', 'club_owner', 'club_manager', 'super_admin'],
+          requiredRoles: ['admin', 'manager'],
         }
       );
     }
 
-    // Security/Doorman role - limited to door control
-    if (role === 'security') {
+    // Doorman role - limited to door control
+    if (role === 'doorman') {
       items.push({
         label: 'Door Control',
         href: '/admin/door',
         icon: <DoorOpen className="h-5 w-5" />,
-        requiredRoles: ['security'],
+        requiredRoles: ['doorman'],
       });
     }
 
-    // Staff/Bartender role - limited to bar/POS
-    if (role === 'staff' || role === 'host') {
+    // Bartender role - limited to bar/POS
+    if (role === 'bartender') {
       items.push({
         label: 'Bar & POS',
         href: '/admin/bar',
         icon: <Wine className="h-5 w-5" />,
-        requiredRoles: ['staff', 'host'],
+        requiredRoles: ['bartender'],
       });
     }
 

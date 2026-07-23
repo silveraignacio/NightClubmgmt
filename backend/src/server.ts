@@ -14,6 +14,7 @@ import pool from './config/database';
 // Import routes
 import authRoutes from './routes/auth';
 import membersRoutes from './routes/members';
+import membershipTiersRoutes from './routes/membershipTiers';
 import visitsRoutes from './routes/visits';
 import transactionsRoutes from './routes/transactions';
 import metricsRoutes from './routes/metrics';
@@ -89,6 +90,7 @@ app.get('/health', async (_req: Request, res: Response) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api', membersRoutes);
+app.use('/api', membershipTiersRoutes);
 app.use('/api', visitsRoutes);
 app.use('/api', transactionsRoutes);
 app.use('/api', metricsRoutes);

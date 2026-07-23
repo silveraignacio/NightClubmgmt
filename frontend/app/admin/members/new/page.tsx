@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,13 +11,14 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { User, Mail, Phone, ArrowLeft, QrCode as QrCodeIcon, CreditCard, Shield } from 'lucide-react';
 import apiClient from '@/lib/api';
+import { getMembershipTiers, type MembershipTier } from '@/lib';
 
 const registerMemberSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   dateOfBirth: z.string().optional(),
-  membershipType: z.enum(['free', 'bronze', 'silver', 'gold', 'platinum']),
+  membershipTierId: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -30,6 +31,7 @@ export default function NewMemberPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [newMemberId, setNewMemberId] = useState<string | null>(null);
+  const [tiers, setTiers] = useState<MembershipTier[]>([]);
 
   const {
     register,
@@ -38,10 +40,14 @@ export default function NewMemberPage() {
     reset,
   } = useForm<RegisterMemberForm>({
     resolver: zodResolver(registerMemberSchema),
-    defaultValues: {
-      membershipType: 'free',
-    },
   });
+
+  useEffect(() => {
+    if (!user?.clubId) return;
+    getMembershipTiers(user.clubId)
+      .then(setTiers)
+      .catch((err) => console.error('Failed to load membership tiers:', err));
+  }, [user?.clubId]);
 
   const onSubmit = async (data: RegisterMemberForm) => {
     if (!user?.clubId) {
@@ -53,12 +59,17 @@ export default function NewMemberPage() {
     setError(null);
 
     try {
+      // Only fullName/email/phone/dateOfBirth/membershipTierId are read by the
+      // backend (see backend/src/controllers/membersController.ts createMember).
       const response = await apiClient.post(`/clubs/${user.clubId}/members`, {
-        ...data,
-        clubId: user.clubId,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        membershipTierId: data.membershipTierId || undefined,
       });
 
-      setNewMemberId(response.data.data.id);
+      setNewMemberId(response.data.data.member.id);
       setSuccess(true);
 
       // Reset form after 3 seconds and redirect
@@ -224,26 +235,23 @@ export default function NewMemberPage() {
                 />
               </div>
 
-              {/* Membership Type */}
+              {/* Membership Tier */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Initial Membership Tier *
+                  Initial Membership Tier
                 </label>
                 <select
-                  {...register('membershipType')}
+                  {...register('membershipTierId')}
                   className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <option value="free">Free - Basic access</option>
-                  <option value="bronze">Bronze - 5% discount</option>
-                  <option value="silver">Silver - 10% discount</option>
-                  <option value="gold">Gold - 15% discount</option>
-                  <option value="platinum">Platinum - 20% discount</option>
+                  <option value="">No tier (free/basic access)</option>
+                  {tiers.map((tier) => (
+                    <option key={tier.id} value={tier.id}>
+                      {tier.tierName}
+                      {tier.discountPercentage > 0 ? ` - ${tier.discountPercentage}% discount` : ''}
+                    </option>
+                  ))}
                 </select>
-                {errors.membershipType && (
-                  <p className="text-red-400 text-sm mt-1">
-                    {errors.membershipType.message}
-                  </p>
-                )}
                 <p className="text-xs text-gray-500 mt-1">
                   Members can upgrade tiers by earning points
                 </p>

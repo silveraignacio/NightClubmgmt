@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
+import { useAuthStore } from './store/authStore';
 
 // Types for API responses
 // Backend returns: {status: "success"|"fail"|"error", data: {...}}
@@ -44,9 +45,11 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 // Request interceptor - Add JWT token to headers
+// Token is read from the single source of truth: the auth store (Zustand),
+// which persists it to localStorage under 'auth-store' (see lib/store/authStore.ts).
 apiClient.interceptors.request.use(
   (config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const token = useAuthStore.getState().token;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -68,9 +71,12 @@ apiClient.interceptors.response.use(
     // Handle 401 - Unauthorized
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        // Clear token and redirect to login
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        // Clear persisted keys synchronously so the reload below never rehydrates
+        // the stale token; the store's logout() also fires (best-effort backend call).
+        localStorage.removeItem('auth-store');
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-user');
+        useAuthStore.getState().logout();
         window.location.href = '/login';
       }
     }

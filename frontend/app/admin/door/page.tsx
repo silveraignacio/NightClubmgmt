@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import jsQR from 'jsqr';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -8,7 +9,7 @@ import { Input } from '@/components/Input';
 import { PageLoader } from '@/components/Loading';
 import {
   createVisit,
-  getMember,
+  getMemberByQr,
   getVisits,
   Member,
   Visit,
@@ -36,12 +37,15 @@ export default function DoorPage() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [guestCount, setGuestCount] = useState(0);
+  const [selectedQrCodeId, setSelectedQrCodeId] = useState<string | null>(null);
+  const [entryMethod, setEntryMethod] = useState<'qr_scan' | 'manual'>('qr_scan');
   const [recentEntries, setRecentEntries] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
-  const [manualMemberId, setManualMemberId] = useState('');
+  const [manualQrCodeId, setManualQrCodeId] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (user?.clubId) {
@@ -52,23 +56,75 @@ export default function DoorPage() {
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadRecentEntries = async () => {
     if (!user?.clubId) return;
 
     try {
-      const response = await getVisits(user.clubId, {
-        page: 1,
-        pageSize: 10,
-        sortBy: 'checkInTime',
-        sortOrder: 'desc',
-      });
+      const response = await getVisits(user.clubId, { page: 1, pageSize: 10 });
       setRecentEntries(response.data);
     } catch (err) {
       console.error('Failed to load recent entries:', err);
     }
   };
+
+  const handleScan = useCallback(
+    async (qrCodeId: string, method: 'qr_scan' | 'manual') => {
+      if (!qrCodeId || !user?.clubId) return;
+
+      setLoading(true);
+      stopCamera();
+
+      try {
+        const member = await getMemberByQr(user.clubId, qrCodeId);
+
+        setScanResult({
+          success: true,
+          member,
+          message: 'Member verified successfully!',
+        });
+        setSelectedMember(member);
+        setSelectedQrCodeId(qrCodeId);
+        setEntryMethod(method);
+      } catch (err: any) {
+        setScanResult({
+          success: false,
+          message: err.message || 'Failed to verify member',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.clubId]
+  );
+
+  // Decode QR codes from the live camera feed frame-by-frame.
+  const tick = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code && code.data) {
+          handleScan(code.data, 'qr_scan');
+          return;
+        }
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [handleScan]);
 
   const startCamera = async () => {
     try {
@@ -82,6 +138,7 @@ export default function DoorPage() {
       }
 
       setScanning(true);
+      rafRef.current = requestAnimationFrame(tick);
     } catch (err) {
       console.error('Failed to access camera:', err);
       alert('Unable to access camera. Please check permissions.');
@@ -89,6 +146,10 @@ export default function DoorPage() {
   };
 
   const stopCamera = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -99,59 +160,20 @@ export default function DoorPage() {
     setScanning(false);
   };
 
-  const handleScan = async (data: string | null) => {
-    if (!data || !user?.clubId) return;
-
-    setLoading(true);
-    stopCamera();
-
-    try {
-      // Extract member ID from QR code data
-      // Assuming QR code contains member ID
-      const memberId = data;
-
-      const member = await getMember(user.clubId, memberId);
-
-      if (member.status !== 'ACTIVE') {
-        setScanResult({
-          success: false,
-          message: `Member account is ${member.status.toLowerCase()}`,
-        });
-        return;
-      }
-
-      setScanResult({
-        success: true,
-        member,
-        message: 'Member verified successfully!',
-      });
-      setSelectedMember(member);
-    } catch (err: any) {
-      setScanResult({
-        success: false,
-        message: err.message || 'Failed to verify member',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleManualScan = async () => {
-    if (!manualMemberId.trim() || !user?.clubId) return;
-    handleScan(manualMemberId.trim());
+    if (!manualQrCodeId.trim() || !user?.clubId) return;
+    handleScan(manualQrCodeId.trim(), 'manual');
   };
 
   const confirmEntry = async () => {
-    if (!selectedMember || !user?.clubId) return;
+    if (!selectedMember || !selectedQrCodeId || !user?.clubId) return;
 
     setLoading(true);
 
     try {
       await createVisit(user.clubId, {
-        memberId: selectedMember.id,
-        entryMethod: scanning ? 'QR_CODE' : 'MANUAL',
-        guestCount,
-        checkInTime: new Date().toISOString(),
+        qrCodeId: selectedQrCodeId,
+        entryMethod,
       });
 
       // Show success message
@@ -163,9 +185,9 @@ export default function DoorPage() {
       // Reset state
       setTimeout(() => {
         setSelectedMember(null);
+        setSelectedQrCodeId(null);
         setScanResult(null);
-        setGuestCount(0);
-        setManualMemberId('');
+        setManualQrCodeId('');
         loadRecentEntries();
       }, 2000);
     } catch (err: any) {
@@ -228,8 +250,11 @@ export default function DoorPage() {
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-cover"
                 />
+                {/* Hidden canvas used to grab frames for QR decoding */}
+                <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 border-4 border-purple-500 rounded-lg pointer-events-none">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white rounded-lg"></div>
                 </div>
@@ -264,13 +289,13 @@ export default function DoorPage() {
             {/* Manual Entry */}
             <div className="border-t border-gray-200 pt-4">
               <p className="text-sm font-medium text-gray-700 mb-2">
-                Or enter Member ID manually:
+                Or enter the member&apos;s QR code manually:
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter Member ID..."
-                  value={manualMemberId}
-                  onChange={(e) => setManualMemberId(e.target.value)}
+                  placeholder="Enter QR code..."
+                  value={manualQrCodeId}
+                  onChange={(e) => setManualQrCodeId(e.target.value)}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
                       handleManualScan();
@@ -281,7 +306,7 @@ export default function DoorPage() {
                 />
                 <Button
                   onClick={handleManualScan}
-                  disabled={!manualMemberId.trim() || loading}
+                  disabled={!manualQrCodeId.trim() || loading}
                   isLoading={loading}
                 >
                   Verify
@@ -368,35 +393,6 @@ export default function DoorPage() {
                   </div>
                 </div>
 
-                {/* Guest Count */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Guests (Optional)
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setGuestCount(Math.max(0, guestCount - 1))}
-                      disabled={guestCount === 0}
-                    >
-                      -
-                    </Button>
-                    <div className="flex-1 text-center">
-                      <span className="text-3xl font-bold text-gray-900">
-                        {guestCount}
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setGuestCount(guestCount + 1)}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Confirm Button */}
                 <Button
                   size="lg"
@@ -413,7 +409,7 @@ export default function DoorPage() {
               <div className="text-center py-12 text-gray-500">
                 <AlertCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">No member scanned</p>
-                <p className="text-sm">Scan a QR code or enter Member ID to begin</p>
+                <p className="text-sm">Scan a QR code or enter it manually to begin</p>
               </div>
             )}
           </CardContent>
@@ -451,12 +447,6 @@ export default function DoorPage() {
                       </p>
                       <p className="text-sm text-gray-600">
                         {formatTime(entry.checkInTime)}
-                        {entry.guestCount > 0 && (
-                          <span className="ml-2">
-                            +{entry.guestCount}{' '}
-                            {entry.guestCount === 1 ? 'guest' : 'guests'}
-                          </span>
-                        )}
                       </p>
                     </div>
                   </div>

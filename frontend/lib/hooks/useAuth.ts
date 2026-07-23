@@ -124,7 +124,7 @@ export function useAuth() {
  * @returns Boolean indicating if user has any of the specified roles
  *
  * @example
- * const isManager = useHasRole(['club_owner', 'club_manager']);
+ * const isManager = useHasRole(['admin', 'manager']);
  */
 export function useHasRole(roles: string | string[]): boolean {
   const user = useAuthStore((state) => state.user);

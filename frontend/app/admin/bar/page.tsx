@@ -8,7 +8,7 @@ import { Input } from '@/components/Input';
 import { PageLoader } from '@/components/Loading';
 import {
   createTransaction,
-  getMember,
+  getMemberByQr,
   getTransactions,
   Member,
   Transaction,
@@ -61,14 +61,15 @@ const MENU_ITEMS: MenuItem[] = [
   { id: '12', name: 'Salad', category: 'Food', price: 10.00, icon: '🥗' },
 ];
 
-type PaymentMethod = 'CASH' | 'CARD' | 'MOBILE' | 'POINTS';
+// Matches the backend's payment_method enum (see database/schema.sql / validators.ts)
+type PaymentMethod = 'cash' | 'card' | 'points' | 'mixed';
 
 export default function BarPage() {
   const { user } = useAuth();
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [memberIdInput, setMemberIdInput] = useState('');
+  const [memberQrInput, setMemberQrInput] = useState('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [transactionSuccess, setTransactionSuccess] = useState(false);
@@ -90,8 +91,6 @@ export default function BarPage() {
       const response = await getTransactions(user.clubId, {
         page: 1,
         pageSize: 5,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
       });
       setRecentTransactions(response.data);
     } catch (err) {
@@ -100,20 +99,13 @@ export default function BarPage() {
   };
 
   const handleScanMember = async () => {
-    if (!memberIdInput.trim() || !user?.clubId) return;
+    if (!memberQrInput.trim() || !user?.clubId) return;
 
     setLoading(true);
     setSearchError(null);
 
     try {
-      const member = await getMember(user.clubId, memberIdInput.trim());
-
-      if (member.status !== 'ACTIVE') {
-        setSearchError(`Member account is ${member.status.toLowerCase()}`);
-        setSelectedMember(null);
-        return;
-      }
-
+      const member = await getMemberByQr(user.clubId, memberQrInput.trim());
       setSelectedMember(member);
       setSearchError(null);
     } catch (err: any) {
@@ -202,13 +194,18 @@ export default function BarPage() {
         .map(item => `${item.quantity}x ${item.menuItem.name}`)
         .join(', ');
 
+      // Send the pre-discount subtotal: the backend looks up the member's tier
+      // discount itself and computes the final charged amount server-side
+      // (see transactionsController.createTransaction) — sending an
+      // already-discounted total here would double-apply the discount.
+      const hasFood = orderItems.every((item) => item.menuItem.category === 'Food');
+
       await createTransaction(user.clubId, {
-        memberId: selectedMember.id,
-        amount: calculateTotal(),
-        type: 'PURCHASE',
+        qrCodeId: memberQrInput.trim(),
+        amount: calculateSubtotal(),
+        transactionType: hasFood ? 'food_sale' : 'drink_sale',
         paymentMethod,
-        description: 'Bar purchase',
-        itemsDescription,
+        description: itemsDescription,
       });
 
       // Show success
@@ -218,9 +215,9 @@ export default function BarPage() {
       setTimeout(() => {
         setOrderItems([]);
         setSelectedMember(null);
-        setMemberIdInput('');
+        setMemberQrInput('');
         setTransactionSuccess(false);
-        setPaymentMethod('CARD');
+        setPaymentMethod('card');
         loadRecentTransactions();
       }, 2000);
     } catch (err: any) {
@@ -308,9 +305,9 @@ export default function BarPage() {
               <div className="space-y-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Enter Member ID or scan QR code..."
-                    value={memberIdInput}
-                    onChange={(e) => setMemberIdInput(e.target.value)}
+                    placeholder="Enter or scan member's QR code..."
+                    value={memberQrInput}
+                    onChange={(e) => setMemberQrInput(e.target.value)}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleScanMember();
@@ -321,7 +318,7 @@ export default function BarPage() {
                   />
                   <Button
                     onClick={handleScanMember}
-                    disabled={!memberIdInput.trim() || loading}
+                    disabled={!memberQrInput.trim() || loading}
                     isLoading={loading}
                   >
                     Search
@@ -517,9 +514,9 @@ export default function BarPage() {
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setPaymentMethod('CARD')}
+                        onClick={() => setPaymentMethod('card')}
                         className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                          paymentMethod === 'CARD'
+                          paymentMethod === 'card'
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
@@ -528,9 +525,9 @@ export default function BarPage() {
                         <span className="text-sm font-medium">Card</span>
                       </button>
                       <button
-                        onClick={() => setPaymentMethod('CASH')}
+                        onClick={() => setPaymentMethod('cash')}
                         className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                          paymentMethod === 'CASH'
+                          paymentMethod === 'cash'
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
@@ -539,20 +536,20 @@ export default function BarPage() {
                         <span className="text-sm font-medium">Cash</span>
                       </button>
                       <button
-                        onClick={() => setPaymentMethod('MOBILE')}
+                        onClick={() => setPaymentMethod('mixed')}
                         className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                          paymentMethod === 'MOBILE'
+                          paymentMethod === 'mixed'
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <Smartphone className="h-5 w-5" />
-                        <span className="text-sm font-medium">Mobile</span>
+                        <span className="text-sm font-medium">Mixed</span>
                       </button>
                       <button
-                        onClick={() => setPaymentMethod('POINTS')}
+                        onClick={() => setPaymentMethod('points')}
                         className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
-                          paymentMethod === 'POINTS'
+                          paymentMethod === 'points'
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
