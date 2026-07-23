@@ -55,6 +55,12 @@ export enum AuditActionType {
   INVALID_TOKEN = 'security.invalid_token',
   RATE_LIMIT_EXCEEDED = 'security.rate_limit_exceeded',
   SUSPICIOUS_ACTIVITY = 'security.suspicious_activity',
+
+  // Email verification / password reset
+  EMAIL_VERIFICATION_SENT = 'auth.email_verification_sent',
+  EMAIL_VERIFIED = 'auth.email_verified',
+  PASSWORD_RESET_REQUESTED = 'auth.password_reset_requested',
+  PASSWORD_RESET_COMPLETED = 'auth.password_reset_completed',
 }
 
 export interface AuditLogEntry {

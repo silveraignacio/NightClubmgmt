@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
 import { AppError } from '../utils/errorHandler';
 import { v4 as uuidv4 } from 'uuid';
+import { sendVerificationEmail } from './emailService';
+
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -177,12 +181,18 @@ export const registerMember = async (data: RegisterData) => {
   // Generate unique QR code ID
   const qrCodeId = `${clubId}-${uuidv4()}`;
 
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+
   // Create member
   const memberResult = await query(
-    `INSERT INTO club_members (club_id, email, password_hash, full_name, qr_code_id, membership_type)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO club_members (
+       club_id, email, password_hash, full_name, qr_code_id, membership_type,
+       email_verification_token, email_verification_expires_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id, email, full_name, club_id, qr_code_id, membership_type, points_balance`,
-    [clubId, email, passwordHash, fullName, qrCodeId, 'free']
+    [clubId, email, passwordHash, fullName, qrCodeId, 'free', verificationToken, verificationExpiresAt]
   );
 
   const member = memberResult.rows[0];
@@ -192,6 +202,9 @@ export const registerMember = async (data: RegisterData) => {
     'UPDATE clubs SET members_count = members_count + 1 WHERE id = $1',
     [clubId]
   );
+
+  // Best-effort: registration must succeed even if the email provider hiccups.
+  await sendVerificationEmail(member.email, verificationToken, member.full_name);
 
   // Generate token
   const token = signToken(member.id, member.email, 'member', clubId);
@@ -325,4 +338,72 @@ export const changePassword = async (
     newPasswordHash,
     userId,
   ]);
+};
+
+/**
+ * Verify a member's email via the token sent at registration (or resend).
+ * Returns the member's id/clubId so the caller can audit-log it.
+ */
+export const verifyMemberEmail = async (token: string) => {
+  const result = await query(
+    `SELECT id, club_id, email_verification_expires_at
+     FROM club_members
+     WHERE email_verification_token = $1`,
+    [token]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('Invalid or expired verification token', 400);
+  }
+
+  const member = result.rows[0];
+
+  if (
+    member.email_verification_expires_at &&
+    new Date(member.email_verification_expires_at) < new Date()
+  ) {
+    throw new AppError('Verification link has expired', 400);
+  }
+
+  await query(
+    `UPDATE club_members
+     SET email_verified = true, email_verification_token = NULL, email_verification_expires_at = NULL
+     WHERE id = $1`,
+    [member.id]
+  );
+
+  return { id: member.id, clubId: member.club_id };
+};
+
+/**
+ * Issue a new verification token for a member and email it. Silently no-ops
+ * if the member is already verified (no error — resending an unnecessary
+ * link isn't worth surfacing as a failure to the caller).
+ */
+export const resendMemberVerification = async (memberId: string, clubId: string) => {
+  const result = await query(
+    'SELECT email, full_name, email_verified FROM club_members WHERE id = $1 AND club_id = $2',
+    [memberId, clubId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new AppError('Member not found', 404);
+  }
+
+  const member = result.rows[0];
+  if (member.email_verified) {
+    return;
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+
+  await query(
+    `UPDATE club_members
+     SET email_verification_token = $1, email_verification_expires_at = $2
+     WHERE id = $3`,
+    [verificationToken, verificationExpiresAt, memberId]
+  );
+
+  await sendVerificationEmail(member.email, verificationToken, member.full_name);
 };

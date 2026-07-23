@@ -54,11 +54,10 @@ Minimum variables to set:
 | `NEXT_PUBLIC_API_URL` | URL the browser uses to reach the API | `http://localhost:5001` |
 | `FRONTEND_PORT` | Host-side port for Next.js | `3000` |
 | `ROOT_DOMAIN` | Apex domain for subdomain routing | `localhost` or `app.example.com` |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret (server side) | optional in dev |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile site key (browser) | optional in dev |
-| `EMAIL_PROVIDER` | `resend` / `postmark` / `sendgrid` | TBD |
-| `EMAIL_FROM` | Default sender address | `noreply@your-domain.com` |
-| `SENTRY_DSN` | Sentry endpoint (Phase 7) | optional in dev |
+| `RESEND_API_KEY` | Resend API key — email verification + password reset. Without a real key, `emailService` logs a warning and no-ops instead of sending | `re_...` |
+| `EMAIL_FROM` | Sender address for Resend | `onboarding@resend.dev` |
+
+> `TURNSTILE_SECRET_KEY`, `EMAIL_PROVIDER` (abstraction over multiple providers), and `SENTRY_DSN` are roadmap items, not implemented yet — see `BACKLOG.md`. Ignore any reference to them elsewhere in this doc.
 
 > See [`ENV_SETUP.md`](./ENV_SETUP.md) for the full annotated list. The DB name is `clubnightlife` (single word), not `club_nightlife`.
 
@@ -75,7 +74,11 @@ What this does:
 1. Builds the **backend** image (Node 20 + TypeScript compiled at build time).
 2. Builds the **frontend** image (Next.js 14 standalone build).
 3. Starts **postgres** (15) and **redis** (7) containers with volumes.
-4. On backend startup, runs `npm run migrate` (uses `node-pg-migrate`) to apply all SQL migrations idempotently. Then `node dist/server.js` boots Express on port 5000 inside the container, mapped to `BACKEND_PORT` outside.
+4. `database/schema.sql` runs automatically on first Postgres boot (mounted as a `docker-entrypoint-initdb.d` init script — only on a fresh volume). Files under `database/migrations/` are **not** applied automatically today; run them by hand against the running `postgres` container, in filename order (`001_...`, `002_...`, ...):
+   ```bash
+   docker-compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < database/migrations/002_email_verification_and_password_reset.sql
+   ```
+   `npm run migrate` / `node-pg-migrate` do not exist in this codebase — an automated migration runner is a backlog item (see `BACKLOG.md`), not current behavior. Then `node dist/server.js` boots Express on port 5000 inside the container, mapped to `BACKEND_PORT` outside.
 5. The frontend boots on container port 3000, mapped to `FRONTEND_PORT`.
 
 Check logs:
@@ -168,11 +171,11 @@ Before going to production, verify:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Backend crashes on startup with "relation does not exist" | Migrations didn't run | Check `docker-compose logs backend`. Run `docker-compose exec backend npm run migrate` manually. |
-| 500 on every `/admin/*` page | DB column drift (e.g. `is_active` vs `status`) | Re-run migrations. See `PROJECT_STATUS.md` recent fixes. |
+| Backend crashes on startup with "relation does not exist" | A file under `database/migrations/` wasn't applied | Apply it by hand: `docker-compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < database/migrations/00X_*.sql` (see step 4). |
+| 500 on every `/admin/*` page | DB column drift (e.g. `is_active` vs `status`) | Re-apply pending migrations by hand. See `PROJECT_STATUS.md` recent fixes. |
 | Frontend cannot reach API in browser | `NEXT_PUBLIC_API_URL` points to a container hostname, not `localhost` | Set to `http://localhost:<BACKEND_PORT>` for local dev. |
 | "Cannot connect to redis" | Redis container not started or wrong host | `docker-compose ps redis`. `REDIS_URL=redis://redis:6379` for inside Docker. |
-| Member registration succeeds but no email sent | No email provider configured | Set `EMAIL_PROVIDER` and corresponding API key. Until then the token is in the backend logs. |
+| Member registration succeeds but no email sent | `RESEND_API_KEY` not set (or still the placeholder) | Set a real key from resend.com. Until then, `emailService` logs a warning instead of sending and the request still succeeds. |
 | `npm test` fails locally with "DB not available" | Tests need a running Postgres | `docker-compose up -d postgres redis`; or use the `setupTestDb` helper. |
 
 ---
@@ -184,9 +187,8 @@ Before going to production, verify:
 cd backend && npm run dev          # nodemon
 cd backend && npx tsc --noEmit     # typecheck
 cd backend && npm test             # jest
-cd backend && npm run migrate      # apply pending migrations
-cd backend && npm run migrate:down # roll back the latest migration
-cd backend && npm run migrate:status
+# Migrations: no runner script today — apply database/migrations/*.sql by hand,
+# in order, against the running postgres container (see step 4/9 above).
 
 # Frontend (host)
 cd frontend && npm run dev

@@ -178,7 +178,7 @@ export default function LoginPage() {
           </label>
 
           <Link
-            href="/auth/forgot-password"
+            href="/forgot-password"
             className="text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium"
           >
             Forgot password?
@@ -211,7 +211,7 @@ export default function LoginPage() {
 
       {/* Registration Links */}
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/auth/register-club">
+        <Link href="/register-club">
           <Button
             variant="outline"
             fullWidth
