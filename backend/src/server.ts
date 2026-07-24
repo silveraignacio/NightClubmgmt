@@ -22,6 +22,7 @@ import metricsRoutes from './routes/metrics';
 import rewardsRoutes from './routes/rewards';
 import employeesRoutes from './routes/employees';
 import incidentsRoutes from './routes/incidents';
+import eventsRoutes from './routes/events';
 
 dotenv.config();
 
@@ -112,6 +113,7 @@ app.use('/api', metricsRoutes);
 app.use('/api', rewardsRoutes);
 app.use('/api', employeesRoutes);
 app.use('/api', incidentsRoutes);
+app.use('/api', eventsRoutes);
 
 // Test route
 app.get('/api', (_req: Request, res: Response) => {

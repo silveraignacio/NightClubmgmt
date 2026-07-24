@@ -66,6 +66,10 @@ export enum AuditActionType {
   // Incident actions
   INCIDENT_REPORTED = 'incident.reported',
   INCIDENT_RESOLVED = 'incident.resolved',
+
+  // Event actions
+  EVENT_CREATED = 'event.created',
+  EVENT_DELETED = 'event.deleted',
 }
 
 export interface AuditLogEntry {
