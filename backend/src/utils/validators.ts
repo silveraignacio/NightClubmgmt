@@ -272,3 +272,28 @@ export const createVipReservationSchema = z.object({
 export const updateVipReservationStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show']),
 });
+
+// Guest list validation schemas
+export const createGuestListSchema = z.object({
+  listName: z.string().min(1, 'List name is required'),
+  eventDate: z.string().min(1, 'Event date is required'),
+  eventId: z.string().uuid().optional(),
+  entryType: z.enum(['free_entry', 'reduced', 'vip']).optional(),
+  maxGuests: z.number().positive().optional(),
+});
+
+export const updateGuestListSchema = z.object({
+  listName: z.string().min(1).optional(),
+  eventDate: z.string().optional(),
+  eventId: z.string().uuid().optional(),
+  entryType: z.enum(['free_entry', 'reduced', 'vip']).optional(),
+  maxGuests: z.number().positive().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const addGuestListEntrySchema = z.object({
+  guestName: z.string().min(1, 'Guest name is required'),
+  guestPhone: z.string().optional(),
+  plusOnes: z.number().min(0).optional(),
+  memberId: z.string().uuid().optional(),
+});

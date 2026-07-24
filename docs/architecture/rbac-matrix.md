@@ -75,7 +75,14 @@
 | PUT    `/clubs/:clubId/guest-lists/:listId` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | DELETE `/clubs/:clubId/guest-lists/:listId` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | POST   `/clubs/:clubId/guest-lists/:listId/entries` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| POST   `/clubs/:clubId/guest-lists/:listId/entries/:entryId/check-in` | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| DELETE `/clubs/:clubId/guest-lists/:listId/entries/:entryId` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| POST   `/clubs/:clubId/guest-lists/:listId/entries/:entryId/check-in` | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
+
+> `doorman` added to check-in at implementation time — the original spec above
+> only had admin/manager/security, but checking guests in at the door is
+> doorman's core job per `docs/product/PRODUCT_FOUNDATION.md`. `DELETE
+> .../entries/:entryId` also wasn't in the original spec (only POST) but is
+> needed to remove a guest added by mistake.
 
 ## VIP
 
