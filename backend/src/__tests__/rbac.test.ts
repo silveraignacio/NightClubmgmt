@@ -108,6 +108,15 @@ const endpoints: EndpointSpec[] = [
   { name: 'PUT /events/:id', allowed: ['admin', 'manager'] },
   { name: 'DELETE /events/:id', allowed: ['admin', 'manager'] },
   { name: 'POST /events/:id/attendance/:memberId', allowed: ['admin', 'manager', 'bartender'] },
+
+  // ── VIP ──────────────────────────────────────────────────────────────────
+  // GET tables/reservations and POST reservations have no restrictTo (open
+  // to any authenticated club user) — not represented here.
+  { name: 'POST /vip/tables', allowed: ['admin', 'manager'] },
+  { name: 'PUT /vip/tables/:id', allowed: ['admin', 'manager'] },
+  { name: 'DELETE /vip/tables/:id', allowed: ['admin', 'manager'] },
+  { name: 'PATCH /vip/reservations/:id/status', allowed: ['admin', 'manager', 'doorman'] },
+  { name: 'DELETE /vip/reservations/:id', allowed: ['admin', 'manager'] },
 ];
 
 describe('RBAC: restrictTo middleware', () => {
