@@ -70,6 +70,9 @@ export enum AuditActionType {
   // Event actions
   EVENT_CREATED = 'event.created',
   EVENT_DELETED = 'event.deleted',
+
+  // VIP actions
+  VIP_RESERVATION_CREATED = 'vip.reservation_created',
 }
 
 export interface AuditLogEntry {

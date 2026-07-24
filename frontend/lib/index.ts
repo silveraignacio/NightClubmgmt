@@ -100,3 +100,20 @@ export type { Incident, IncidentType, IncidentSeverity, CreateIncidentData } fro
 // Events
 export { getEvents, createEvent, deleteEvent } from './events';
 export type { Event, CreateEventData as CreateEventFormData } from './events';
+
+// VIP
+export {
+  getVipTables,
+  createVipTable,
+  getVipReservations,
+  createVipReservation,
+  updateVipReservationStatus,
+} from './vip';
+export type {
+  VipTable,
+  VipReservation,
+  VipTableType,
+  VipReservationStatus,
+  CreateVipTableData,
+  CreateVipReservationData,
+} from './vip';

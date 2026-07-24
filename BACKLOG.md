@@ -181,6 +181,14 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
       nunca implementado). Nota: `event_registrations`/RSVP y guest lists
       siguen sin construir (ver P2), esto es solo "el club programa un evento
       y marca quién vino", no "el socio se anota antes".
+- [x] **VIP tables + reservations** — tablas `vip_tables`/`vip_reservations`,
+      CRUD de mesas (admin/manager), reservas (cualquier staff puede crear,
+      admin/manager/doorman cambian status, admin/manager cancelan/borran),
+      página `/admin/vip`. RBAC según `docs/architecture/rbac-matrix.md`
+      "VIP" + extensión de status/delete (no estaba en el doc original, se
+      agregó al implementar — ver nota en el doc). **Esto NO es el floor
+      plan visual** (drag-and-drop, mapa del salón) que sigue en P2 — es
+      inventario de mesas + reservas en lista, sin editor de layout.
 - [ ] **Embudo de alta de socios roto de punta a punta** (CRÍTICO) —
       `createMember` (alta por admin) inserta el socio sin `password_hash`:
       nunca puede loguearse al portal. Auto-registro (`POST /auth/register/

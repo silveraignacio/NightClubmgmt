@@ -87,6 +87,14 @@
 | DELETE `/clubs/:clubId/vip/tables/:tableId` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | GET    `/clubs/:clubId/vip/reservations` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | POST   `/clubs/:clubId/vip/reservations` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PATCH  `/clubs/:clubId/vip/reservations/:id/status` | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| DELETE `/clubs/:clubId/vip/reservations/:id` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+> Status/delete endpoints for reservations weren't in the original spec above
+> (only GET/POST were) but are needed to operate a reservation day-to-day —
+> added when the feature was actually implemented. `doorman` gets status
+> updates (pending→confirmed→seated→completed) since seating guests at the
+> door is squarely their job per `docs/product/PRODUCT_FOUNDATION.md`.
 
 ## Incidents
 

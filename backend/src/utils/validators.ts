@@ -240,3 +240,35 @@ export const updateIncidentSchema = z.object({
 export const resolveIncidentSchema = z.object({
   notes: z.string().optional(),
 });
+
+// VIP validation schemas
+export const createVipTableSchema = z.object({
+  tableName: z.string().min(1, 'Table name is required'),
+  tableType: z.enum(['booth', 'table', 'skybox', 'cabana', 'stage_side']).optional(),
+  capacity: z.number().positive().optional(),
+  location: z.string().optional(),
+  minimumSpend: z.number().min(0).optional(),
+});
+
+export const updateVipTableSchema = z.object({
+  tableName: z.string().min(1).optional(),
+  tableType: z.enum(['booth', 'table', 'skybox', 'cabana', 'stage_side']).optional(),
+  capacity: z.number().positive().optional(),
+  location: z.string().optional(),
+  minimumSpend: z.number().min(0).optional(),
+  isAvailable: z.boolean().optional(),
+});
+
+export const createVipReservationSchema = z.object({
+  tableId: z.string().uuid(),
+  memberId: z.string().uuid().optional(),
+  reservationDate: z.string().min(1, 'Reservation date is required'),
+  guestName: z.string().min(1, 'Guest name is required'),
+  guestPhone: z.string().optional(),
+  partySize: z.number().positive().optional(),
+  specialRequests: z.string().optional(),
+});
+
+export const updateVipReservationStatusSchema = z.object({
+  status: z.enum(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show']),
+});
