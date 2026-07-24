@@ -24,6 +24,7 @@ import employeesRoutes from './routes/employees';
 import incidentsRoutes from './routes/incidents';
 import eventsRoutes from './routes/events';
 import vipRoutes from './routes/vip';
+import guestListsRoutes from './routes/guestLists';
 
 dotenv.config();
 
@@ -116,6 +117,7 @@ app.use('/api', employeesRoutes);
 app.use('/api', incidentsRoutes);
 app.use('/api', eventsRoutes);
 app.use('/api', vipRoutes);
+app.use('/api', guestListsRoutes);
 
 // Test route
 app.get('/api', (_req: Request, res: Response) => {

@@ -189,6 +189,13 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
       agregó al implementar — ver nota en el doc). **Esto NO es el floor
       plan visual** (drag-and-drop, mapa del salón) que sigue en P2 — es
       inventario de mesas + reservas en lista, sin editor de layout.
+- [x] **Guest lists** — tablas `guest_lists`/`guest_list_entries` (distinto de
+      `event_attendance`: esto es gente pre-aprobada de antemano, no quién
+      vino de hecho), CRUD de listas (admin/manager), agregar invitados
+      (admin/manager), check-in (admin/manager/security/doorman — doorman
+      agregado al implementar, no estaba en el doc original), página
+      `/admin/guest-lists`. Pendiente: la página de puerta (`/admin/door`)
+      no integra check-in de guest list todavía, solo vía API.
 - [ ] **Embudo de alta de socios roto de punta a punta** (CRÍTICO) —
       `createMember` (alta por admin) inserta el socio sin `password_hash`:
       nunca puede loguearse al portal. Auto-registro (`POST /auth/register/
@@ -240,8 +247,8 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
 - [ ] Modo offline en puerta (queue de escaneos + sync al reconectar, PWA/service worker)
 - [ ] Verificación de ID/edad + ban list ("lista 86") en puerta — el registro de
       incidentes en sí ya existe (ver P0.7), falta la verificación de ID/ban list
-- [x] Eventos (CRUD + marcar asistencia) — ver P0.7. Falta todavía: guest lists
-      (RSVP/lista de invitados por evento, distinto de "asistencia")
+- [x] Eventos (CRUD + marcar asistencia) — ver P0.7.
+- [x] Guest lists (invitados pre-aprobados + check-in) — ver P0.7.
 - [ ] Promociones gestionables (tabla `promotions` sin API de creación)
 - [ ] Notificaciones push reales (Firebase, hoy solo `// TODO` con insert en DB)
 

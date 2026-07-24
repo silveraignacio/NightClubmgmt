@@ -117,3 +117,7 @@ export type {
   CreateVipTableData,
   CreateVipReservationData,
 } from './vip';
+
+// Guest Lists
+export { getGuestLists, getGuestListEntries, createGuestList, addGuestListEntry, checkInGuestListEntry } from './guestLists';
+export type { GuestList, GuestListEntry, CreateGuestListData, AddEntryData as AddGuestListEntryData } from './guestLists';

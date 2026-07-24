@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   PartyPopper,
   Crown,
+  ClipboardList,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -135,6 +136,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           label: 'VIP Tables',
           href: '/admin/vip',
           icon: <Crown className="h-5 w-5" />,
+          requiredRoles: ['admin', 'manager'],
+        },
+        {
+          label: 'Guest Lists',
+          href: '/admin/guest-lists',
+          icon: <ClipboardList className="h-5 w-5" />,
           requiredRoles: ['admin', 'manager'],
         },
         {

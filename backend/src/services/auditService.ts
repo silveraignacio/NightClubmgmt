@@ -73,6 +73,9 @@ export enum AuditActionType {
 
   // VIP actions
   VIP_RESERVATION_CREATED = 'vip.reservation_created',
+
+  // Guest list actions
+  GUEST_LIST_CHECK_IN = 'guest_list.check_in',
 }
 
 export interface AuditLogEntry {
