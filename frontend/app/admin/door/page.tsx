@@ -10,7 +10,12 @@ import { PageLoader } from '@/components/Loading';
 import {
   createVisit,
   getMemberByQr,
+  getGuestLists,
+  getGuestListEntries,
+  checkInGuestListEntry,
   getVisits,
+  GuestList,
+  GuestListEntry,
   Member,
   Visit,
 } from '@/lib';
@@ -24,6 +29,9 @@ import {
   AlertCircle,
   UserCheck,
   Smartphone,
+  ClipboardList,
+  Search,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface ScanResult {
@@ -42,6 +50,14 @@ export default function DoorPage() {
   const [recentEntries, setRecentEntries] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
   const [manualQrCodeId, setManualQrCodeId] = useState('');
+  const [guestLists, setGuestLists] = useState<GuestList[]>([]);
+  const [selectedGuestListId, setSelectedGuestListId] = useState('');
+  const [guestEntries, setGuestEntries] = useState<GuestListEntry[]>([]);
+  const [guestListsLoading, setGuestListsLoading] = useState(false);
+  const [guestEntriesLoading, setGuestEntriesLoading] = useState(false);
+  const [guestListError, setGuestListError] = useState<string | null>(null);
+  const [guestSearch, setGuestSearch] = useState('');
+  const [checkingInGuestId, setCheckingInGuestId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -50,6 +66,7 @@ export default function DoorPage() {
   useEffect(() => {
     if (user?.clubId) {
       loadRecentEntries();
+      loadGuestLists();
     }
 
     // Cleanup camera on unmount
@@ -69,6 +86,51 @@ export default function DoorPage() {
       console.error('Failed to load recent entries:', err);
     }
   };
+
+  const loadGuestLists = async () => {
+    if (!user?.clubId) return;
+
+    setGuestListsLoading(true);
+    setGuestListError(null);
+
+    try {
+      const lists = await getGuestLists(user.clubId);
+      setGuestLists(lists);
+      setSelectedGuestListId((current) => {
+        if (current && lists.some((list) => list.id === current)) {
+          return current;
+        }
+        return lists[0]?.id || '';
+      });
+    } catch (err: any) {
+      setGuestListError(err.message || 'Failed to load guest lists');
+    } finally {
+      setGuestListsLoading(false);
+    }
+  };
+
+  const loadGuestEntries = useCallback(async () => {
+    if (!user?.clubId || !selectedGuestListId) {
+      setGuestEntries([]);
+      return;
+    }
+
+    setGuestEntriesLoading(true);
+    setGuestListError(null);
+
+    try {
+      const entries = await getGuestListEntries(user.clubId, selectedGuestListId);
+      setGuestEntries(entries);
+    } catch (err: any) {
+      setGuestListError(err.message || 'Failed to load guest list entries');
+    } finally {
+      setGuestEntriesLoading(false);
+    }
+  }, [selectedGuestListId, user?.clubId]);
+
+  useEffect(() => {
+    loadGuestEntries();
+  }, [loadGuestEntries]);
 
   const handleScan = useCallback(
     async (qrCodeId: string, method: 'qr_scan' | 'manual') => {
@@ -200,6 +262,26 @@ export default function DoorPage() {
     }
   };
 
+  const handleGuestCheckIn = async (entry: GuestListEntry) => {
+    if (!user?.clubId || !selectedGuestListId || entry.checkedIn) return;
+
+    setCheckingInGuestId(entry.id);
+    setGuestListError(null);
+
+    try {
+      const checkedInEntry = await checkInGuestListEntry(user.clubId, selectedGuestListId, entry.id);
+      setGuestEntries((current) =>
+        current.map((guestEntry) =>
+          guestEntry.id === checkedInEntry.id ? checkedInEntry : guestEntry
+        )
+      );
+    } catch (err: any) {
+      setGuestListError(err.message || 'Failed to check in guest');
+    } finally {
+      setCheckingInGuestId(null);
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', {
@@ -217,6 +299,21 @@ export default function DoorPage() {
     };
     return colors[tier as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
+
+  const selectedGuestList = guestLists.find((list) => list.id === selectedGuestListId);
+  const normalizedGuestSearch = guestSearch.trim().toLowerCase();
+  const filteredGuestEntries = guestEntries.filter((entry) => {
+    if (!normalizedGuestSearch) return true;
+    return (
+      entry.guestName.toLowerCase().includes(normalizedGuestSearch) ||
+      (entry.guestPhone || '').toLowerCase().includes(normalizedGuestSearch)
+    );
+  });
+  const checkedInGuests = guestEntries.filter((entry) => entry.checkedIn).length;
+  const totalGuestsWithPlusOnes = guestEntries.reduce(
+    (total, entry) => total + 1 + (entry.plusOnes || 0),
+    0
+  );
 
   if (!user) {
     return <PageLoader message="Loading..." />;
@@ -415,6 +512,122 @@ export default function DoorPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Guest List Check-In */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-6 w-6" />
+                Guest List Check-In
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Mark pre-approved guests as they arrive at the door
+              </p>
+            </div>
+            {selectedGuestList && (
+              <div className="text-sm text-gray-600 md:text-right">
+                <p className="font-medium text-gray-900">{checkedInGuests}/{guestEntries.length} checked in</p>
+                <p>{totalGuestsWithPlusOnes} total including plus ones</p>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {guestListError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+              {guestListError}
+            </div>
+          )}
+
+          {guestListsLoading ? (
+            <p className="text-sm text-gray-500">Loading guest lists...</p>
+          ) : guestLists.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No active guest lists</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-[minmax(0,260px)_1fr] gap-3">
+                <div>
+                  <label htmlFor="guest-list-select" className="block text-sm font-medium text-gray-700 mb-2">
+                    Active list
+                  </label>
+                  <select
+                    id="guest-list-select"
+                    value={selectedGuestListId}
+                    onChange={(event) => setSelectedGuestListId(event.target.value)}
+                    className="w-full h-10 px-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    {guestLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.listName} · {new Date(list.eventDate).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Input
+                  label="Search guests"
+                  placeholder="Name or phone..."
+                  value={guestSearch}
+                  onChange={(event) => setGuestSearch(event.target.value)}
+                  fullWidth
+                  leftIcon={<Search className="h-4 w-4" />}
+                />
+              </div>
+
+              {guestEntriesLoading ? (
+                <p className="text-sm text-gray-500">Loading guests...</p>
+              ) : filteredGuestEntries.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No guests match this search</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {filteredGuestEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="flex flex-col gap-3 border border-gray-200 rounded-lg p-4 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {entry.guestName}
+                          {entry.plusOnes > 0 && (
+                            <span className="text-gray-500 font-medium"> +{entry.plusOnes}</span>
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {entry.guestPhone || 'No phone on file'}
+                        </p>
+                      </div>
+                      {entry.checkedIn ? (
+                        <span className="inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Checked in
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                          onClick={() => handleGuestCheckIn(entry)}
+                          isLoading={checkingInGuestId === entry.id}
+                          loadingText="Checking in..."
+                          disabled={checkingInGuestId !== null}
+                        >
+                          Check in
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Entries */}
       <Card>
