@@ -17,6 +17,7 @@ import {
   Calendar,
   UserCog,
   ShieldAlert,
+  PartyPopper,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -121,6 +122,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           label: 'Bar & POS',
           href: '/admin/bar',
           icon: <Wine className="h-5 w-5" />,
+          requiredRoles: ['admin', 'manager'],
+        },
+        {
+          label: 'Events',
+          href: '/admin/events',
+          icon: <PartyPopper className="h-5 w-5" />,
           requiredRoles: ['admin', 'manager'],
         },
         {

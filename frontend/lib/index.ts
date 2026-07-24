@@ -96,3 +96,7 @@ export type { Employee, Invitation as EmployeeInvitation, EmployeeRole } from '.
 // Incidents
 export { getIncidents, createIncident, resolveIncident } from './incidents';
 export type { Incident, IncidentType, IncidentSeverity, CreateIncidentData } from './incidents';
+
+// Events
+export { getEvents, createEvent, deleteEvent } from './events';
+export type { Event, CreateEventData as CreateEventFormData } from './events';

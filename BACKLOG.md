@@ -175,6 +175,12 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
       `docs/architecture/rbac-matrix.md`), página `/admin/security` (reportar
       +listar+resolver), nav item para admin/manager/security. `UserRole` del
       frontend no tenía `security`/`staff` — corregido.
+- [x] **Events** — tabla `events` + `event_attendance`, CRUD (admin/manager) +
+      marcar asistencia (admin/manager/bartender), página `/admin/events`.
+      RBAC según `docs/architecture/rbac-matrix.md` "Events" (ya documentado,
+      nunca implementado). Nota: `event_registrations`/RSVP y guest lists
+      siguen sin construir (ver P2), esto es solo "el club programa un evento
+      y marca quién vino", no "el socio se anota antes".
 - [ ] **Embudo de alta de socios roto de punta a punta** (CRÍTICO) —
       `createMember` (alta por admin) inserta el socio sin `password_hash`:
       nunca puede loguearse al portal. Auto-registro (`POST /auth/register/
@@ -226,7 +232,8 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
 - [ ] Modo offline en puerta (queue de escaneos + sync al reconectar, PWA/service worker)
 - [ ] Verificación de ID/edad + ban list ("lista 86") en puerta — el registro de
       incidentes en sí ya existe (ver P0.7), falta la verificación de ID/ban list
-- [ ] Eventos + guest lists (el schema tiene `events`/`event_registrations`, sin API)
+- [x] Eventos (CRUD + marcar asistencia) — ver P0.7. Falta todavía: guest lists
+      (RSVP/lista de invitados por evento, distinto de "asistencia")
 - [ ] Promociones gestionables (tabla `promotions` sin API de creación)
 - [ ] Notificaciones push reales (Firebase, hoy solo `// TODO` con insert en DB)
 

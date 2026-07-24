@@ -108,6 +108,21 @@ export const createEventSchema = z.object({
   isPublic: z.boolean().default(true),
 });
 
+export const updateEventSchema = z.object({
+  eventName: z.string().min(3).optional(),
+  description: z.string().optional(),
+  eventDate: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  eventType: z.string().optional(),
+  featuredImageUrl: z.string().url().optional(),
+  capacity: z.number().positive().optional(),
+  entryPrice: z.number().min(0).optional(),
+  vipDiscount: z.number().min(0).optional(),
+  isPublic: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+
 // Reward validation schemas
 export const createRewardSchema = z.object({
   rewardName: z.string().min(3, 'Reward name must be at least 3 characters'),

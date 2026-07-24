@@ -100,6 +100,14 @@ const endpoints: EndpointSpec[] = [
   { name: 'POST /incidents', allowed: ['admin', 'manager', 'security'] },
   { name: 'PUT /incidents/:id', allowed: ['admin', 'manager', 'security'] },
   { name: 'POST /incidents/:id/resolve', allowed: ['admin', 'manager'] },
+
+  // ── Events ───────────────────────────────────────────────────────────────
+  // GET /events and GET /events/:id have no restrictTo (open to any
+  // authenticated club user, per rbac-matrix.md) — not represented here.
+  { name: 'POST /events', allowed: ['admin', 'manager'] },
+  { name: 'PUT /events/:id', allowed: ['admin', 'manager'] },
+  { name: 'DELETE /events/:id', allowed: ['admin', 'manager'] },
+  { name: 'POST /events/:id/attendance/:memberId', allowed: ['admin', 'manager', 'bartender'] },
 ];
 
 describe('RBAC: restrictTo middleware', () => {
