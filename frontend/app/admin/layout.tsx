@@ -16,6 +16,7 @@ import {
   Settings,
   Calendar,
   UserCog,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -51,6 +52,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         if (user.role === 'bartender') {
           router.push('/admin/bar');
+          return;
+        }
+
+        if (user.role === 'security') {
+          router.push('/admin/security');
           return;
         }
       }
@@ -118,6 +124,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           requiredRoles: ['admin', 'manager'],
         },
         {
+          label: 'Security',
+          href: '/admin/security',
+          icon: <ShieldAlert className="h-5 w-5" />,
+          requiredRoles: ['admin', 'manager'],
+        },
+        {
           label: 'Settings',
           href: '/admin/settings',
           icon: <Settings className="h-5 w-5" />,
@@ -154,6 +166,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         href: '/admin/bar',
         icon: <Wine className="h-5 w-5" />,
         requiredRoles: ['bartender'],
+      });
+    }
+
+    // Security role - limited to incident reporting (see rbac-matrix.md:
+    // security can report/view incidents but not resolve them or see stats)
+    if (role === 'security') {
+      items.push({
+        label: 'Security',
+        href: '/admin/security',
+        icon: <ShieldAlert className="h-5 w-5" />,
+        requiredRoles: ['security'],
       });
     }
 

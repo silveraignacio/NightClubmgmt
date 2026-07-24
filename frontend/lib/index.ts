@@ -92,3 +92,7 @@ export {
   deactivateEmployee,
 } from './employees';
 export type { Employee, Invitation as EmployeeInvitation, EmployeeRole } from './employees';
+
+// Incidents
+export { getIncidents, createIncident, resolveIncident } from './incidents';
+export type { Incident, IncidentType, IncidentSeverity, CreateIncidentData } from './incidents';

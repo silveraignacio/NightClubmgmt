@@ -185,3 +185,43 @@ export const createVisitSchema = z.object({
   entryType: z.enum(['free_entry', 'paid_entry', 'vip_pass', 'promotional']).default('free_entry'),
   notes: z.string().optional(),
 });
+
+// Incident validation schemas
+export const createIncidentSchema = z.object({
+  incidentType: z.enum([
+    'altercation',
+    'medical',
+    'theft',
+    'noise_complaint',
+    'ejection',
+    'id_issue',
+    'overcapacity',
+    'other',
+  ]),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).default('low'),
+  description: z.string().min(3, 'Description must be at least 3 characters'),
+  location: z.string().optional(),
+  involvedMembers: z.array(z.string().uuid()).optional(),
+  involvedStaff: z.array(z.string().uuid()).optional(),
+  actionTaken: z.string().optional(),
+  policeCalled: z.boolean().optional(),
+  ambulanceCalled: z.boolean().optional(),
+});
+
+export const updateIncidentSchema = z.object({
+  incidentType: z
+    .enum(['altercation', 'medical', 'theft', 'noise_complaint', 'ejection', 'id_issue', 'overcapacity', 'other'])
+    .optional(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  description: z.string().min(3).optional(),
+  location: z.string().optional(),
+  involvedMembers: z.array(z.string().uuid()).optional(),
+  involvedStaff: z.array(z.string().uuid()).optional(),
+  actionTaken: z.string().optional(),
+  policeCalled: z.boolean().optional(),
+  ambulanceCalled: z.boolean().optional(),
+});
+
+export const resolveIncidentSchema = z.object({
+  notes: z.string().optional(),
+});

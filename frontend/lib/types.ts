@@ -11,6 +11,8 @@ export enum UserRole {
   MANAGER = "manager",
   DOORMAN = "doorman",
   BARTENDER = "bartender",
+  SECURITY = "security",
+  STAFF = "staff",
   MEMBER = "member",
 }
 

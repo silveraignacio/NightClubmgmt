@@ -91,6 +91,15 @@ const endpoints: EndpointSpec[] = [
   { name: 'GET /employees/invitations', allowed: ['admin'] },
   { name: 'DELETE /employees/invitations/:id', allowed: ['admin'] },
   { name: 'DELETE /employees/:userId', allowed: ['admin'] },
+
+  // ── Incidents ────────────────────────────────────────────────────────────
+  { name: 'GET /incidents', allowed: ['admin', 'manager', 'security'] },
+  { name: 'GET /incidents/tonight', allowed: ['admin', 'manager', 'security'] },
+  { name: 'GET /incidents/:id', allowed: ['admin', 'manager', 'security'] },
+  { name: 'GET /incidents/stats', allowed: ['admin', 'manager'] },
+  { name: 'POST /incidents', allowed: ['admin', 'manager', 'security'] },
+  { name: 'PUT /incidents/:id', allowed: ['admin', 'manager', 'security'] },
+  { name: 'POST /incidents/:id/resolve', allowed: ['admin', 'manager'] },
 ];
 
 describe('RBAC: restrictTo middleware', () => {
