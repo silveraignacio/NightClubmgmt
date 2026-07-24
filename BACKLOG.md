@@ -194,8 +194,7 @@ origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
       vino de hecho), CRUD de listas (admin/manager), agregar invitados
       (admin/manager), check-in (admin/manager/security/doorman — doorman
       agregado al implementar, no estaba en el doc original), página
-      `/admin/guest-lists`. Pendiente: la página de puerta (`/admin/door`)
-      no integra check-in de guest list todavía, solo vía API.
+      `/admin/guest-lists` y panel de check-in en puerta (`/admin/door`).
 - [ ] **Embudo de alta de socios roto de punta a punta** (CRÍTICO) —
       `createMember` (alta por admin) inserta el socio sin `password_hash`:
       nunca puede loguearse al portal. Auto-registro (`POST /auth/register/
