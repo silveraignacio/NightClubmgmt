@@ -155,6 +155,58 @@ neutralizaba fórmulas (`=HYPERLINK(...)` en un nombre ejecutaría al abrir en E
 - [ ] Refresh tokens (frontend ya espera el campo, backend no lo emite)
 - [ ] (rewards/redemption, pantallas de analítica y export CSV — ver P0.5, ya en curso)
 
+## P0.7 — Review de advisor (Opus 4.8), 2026-07-23: "conectar lo que ya existe"
+
+Segunda ronda de review externo (mismo patrón que P0.5), enfocada en gaps de
+funcionalidad/UX más allá de lo que ya estaba anotado en el roadmap. Hallazgo
+de método: varios controllers/services (`events`, `guestList`, `vip`,
+`incidents`, `drinkSpecials`) que una sesión de research anterior daba por
+"existentes pero no montados" en realidad **no existían en el código fuente
+de `main`** — solo en artifacts de build viejos (`backend/dist`, `backend/
+coverage`, ya borrados) y en la branch de respaldo `backup/local-work-pre-
+origin-main`. Se están construyendo de cero, adaptados a la arquitectura de
+`main`, uno por uno.
+
+- [x] **Incidents (seguridad)** — antes: rol `security` se logueaba y veía un
+      sidebar vacío, sin backend ni frontend. Ahora: tabla `incidents`,
+      `incidentsService`/`incidentsController`, rutas montadas
+      (`GET/POST /clubs/:clubId/incidents`, `/tonight`, `/stats`,
+      `PUT /:id`, `POST /:id/resolve` — RBAC admin/manager/security según
+      `docs/architecture/rbac-matrix.md`), página `/admin/security` (reportar
+      +listar+resolver), nav item para admin/manager/security. `UserRole` del
+      frontend no tenía `security`/`staff` — corregido.
+- [ ] **Embudo de alta de socios roto de punta a punta** (CRÍTICO) —
+      `createMember` (alta por admin) inserta el socio sin `password_hash`:
+      nunca puede loguearse al portal. Auto-registro (`POST /auth/register/
+      member`) necesita `clubId` pero no hay landing pública del club
+      (`club/[slug]`) ni página `register-member` desde donde llegar. Todo el
+      portal member (QR, puntos, rewards) está construido pero inalcanzable
+      para un cliente real.
+- [ ] **El admin no puede gestionar lo que el socio consume** — sin UI para
+      cargar el catálogo de rewards, sin endpoint/UI de ajuste manual de
+      puntos (cortesías, correcciones) — viola `.claude/rules/loyalty.md` R7,
+      que exige ese endpoint auditado.
+- [ ] **Portal member con datos mockeados hardcodeados** (`member/page.tsx`):
+      "Next Reward: Free Drink $12" fijo, mes hardcodeado, progreso de tier
+      con metas inventadas en vez de leer `membership_tiers` real.
+- [ ] **Landing con riesgo reputacional/legal** (`app/page.tsx`): stats
+      inventados (500+ clubs, 100K+ members), botones "Watch Demo"/"Schedule
+      Demo" apuntan a un Rickroll de YouTube, dice "Stripe" cuando la
+      decisión de producto es Paddle, nombres de plan que no coinciden con
+      pricing real, claims de features inexistentes ("offline", "fraud
+      detection"), links de footer rotos (`/about`, `/blog`).
+- [ ] **Rol `staff` sin destino** — igual que `security` antes del fix de
+      arriba: se loguea y no tiene nav items ni endpoints propios más allá de
+      lectura genérica.
+- [ ] **Sin onboarding tras crear el club** — dashboard vacío en el minuto 1
+      del trial, sin wizard guiado (logo, capacidad, invitar primer doorman,
+      dar de alta primer socio).
+- [ ] **Fricciones de sesión/logs** — `console.log` con emojis que imprimen
+      email/fragmentos de token/user completo (viola `security.md` R8 PII y
+      R9), sin refresh token real (JWT de 7 días, expira y patea a `/login`
+      en medio de la operación), CORS `*` en dev, health check no chequea
+      Redis de verdad pese a reportarlo `connected`.
+
 ## P2 — Diferenciadores competitivos
 
 - [ ] **Diseñador de mapas de mesas (floor plan) + reservas de mesa/bottle service**
@@ -172,7 +224,8 @@ neutralizaba fórmulas (`=HYPERLINK(...)` en un nombre ejecutaría al abrir en E
       - Flujo de reserva: desde admin (host) y opcionalmente desde portal del socio
       - Notificar/confirmar con el socio (reusa `notificationService` cuando esté vivo)
 - [ ] Modo offline en puerta (queue de escaneos + sync al reconectar, PWA/service worker)
-- [ ] Verificación de ID/edad + ban list ("lista 86") en puerta, con registro de incidentes
+- [ ] Verificación de ID/edad + ban list ("lista 86") en puerta — el registro de
+      incidentes en sí ya existe (ver P0.7), falta la verificación de ID/ban list
 - [ ] Eventos + guest lists (el schema tiene `events`/`event_registrations`, sin API)
 - [ ] Promociones gestionables (tabla `promotions` sin API de creación)
 - [ ] Notificaciones push reales (Firebase, hoy solo `// TODO` con insert en DB)

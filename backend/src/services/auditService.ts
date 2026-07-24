@@ -62,6 +62,10 @@ export enum AuditActionType {
   EMAIL_VERIFIED = 'auth.email_verified',
   PASSWORD_RESET_REQUESTED = 'auth.password_reset_requested',
   PASSWORD_RESET_COMPLETED = 'auth.password_reset_completed',
+
+  // Incident actions
+  INCIDENT_REPORTED = 'incident.reported',
+  INCIDENT_RESOLVED = 'incident.resolved',
 }
 
 export interface AuditLogEntry {
